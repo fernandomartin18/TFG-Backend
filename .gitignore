@@ -1,101 +1,56 @@
-# Python# Python
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+.pytest_cache/
+.coverage
+*.cover
+htmlcov/
 
-__pycache__/__pycache__/
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+.venv/
 
-*.py[cod]*.py[cod]
-
-*$py.class*$py.class
-
-*.so*.so
-
-.Python.Python
-
-*.egg-info/*.egg-info/
-
-.eggs/.eggs/
-
-.pytest_cache/.pytest_cache/
-
-.coverage.coverage
-
-*.cover*.cover
-
-htmlcov/htmlcov/
-
-
-
-# Virtual environments# Virtual environments
-
-venv/venv/
-
-env/env/
-
-ENV/ENV/
-
-.venv.venv
-
-
-
-# Node# Node
-
-node_modules/node_modules/
-
-npm-debug.log*npm-debug.log*
-
-yarn-debug.log*yarn-debug.log*
-
-yarn-error.log*yarn-error.log*
-
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 pnpm-debug.log*
 
 # Environment variables
-
-# Environment variables.env
-
-.env.env.local
-
-.env.local.env.*.local
-
+.env
+.env.local
 .env.*.local
 
 # IDE
-
-# IDE.vscode/
-
-.vscode/.idea/
-
-.idea/*.swp
-
-*.swp*.swo
-
-*.swo*~
-
-*~.DS_Store
-
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
 
 # Logs
-
-# Logs*.log
-
-*.loglogs/
-
+*.log
 logs/
 
 # Database
-
-# Database*.db
-
-*.db*.sqlite
-
-*.sqlite*.sqlite3
-
+*.db
+*.sqlite
 *.sqlite3
 
 # Build outputs
-
-# Build outputsdist/
-
-dist/build/
-
+dist/
 build/
+
+# OS specific
+Thumbs.db
+.DS_Store
