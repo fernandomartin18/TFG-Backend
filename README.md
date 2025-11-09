@@ -25,21 +25,6 @@ Backend de la aplicación que genera código híbrido a partir de **diagramas de
 
 ## 🚀 Inicio Rápido
 
-### Opción 1: Inicio Automático (RECOMENDADO) 🌟
-
-```bash
-cd fastapi
-./start.sh
-```
-
-Este script:
-- ✅ Verifica e inicia Ollama automáticamente
-- ✅ Verifica modelos instalados
-- ✅ Te pregunta si quieres descargar un modelo (si no tienes)
-- ✅ Arranca el servidor FastAPI
-
-### Opción 2: Inicio Manual
-
 ```bash
 # Terminal 1: Iniciar Ollama
 ollama serve
@@ -100,16 +85,6 @@ Se encarga de comunicarse con **Ollama** (modelos locales de IA), procesar imá
 | `core/logger.py` | Sistema de logging configurable con niveles y formato mejorado. |
 | `requirements.txt` | Dependencias de Python necesarias. |
 
-### Scripts de utilidad:
-
-| Script | Descripción |
-|--------|-------------|
-| `setup.sh` | Instalación automática: crea entorno virtual, instala dependencias y configura `.env`. |
-| `run.sh` | Ejecuta el servidor FastAPI (requiere `setup.sh` previo). |
-| `start.sh` | **Script todo-en-uno**: verifica Ollama, ofrece descargar modelos y arranca el servidor. |
-| `check_ollama.sh` | Verifica estado de Ollama, modelos instalados y sugiere modelos recomendados. |
-| `test_setup.py` | Verifica que todas las importaciones y configuración funcionan correctamente. |
-
 ---
 
 ## 📋 Requisitos Previos
@@ -119,28 +94,7 @@ Se encarga de comunicarse con **Ollama** (modelos locales de IA), procesar imá
 3. **Ollama** instalado y ejecutándose localmente
    - 👉 [Descargar Ollama](https://ollama.ai)
    - Verificar instalación: `ollama --version`
-4. **Al menos un modelo descargado** (recomendado: `qwen2-vl` para multimodal)
-
-### Instalación de Ollama y modelos:
-
-```bash
-# Descargar e instalar Ollama desde https://ollama.ai
-
-# Iniciar Ollama
-ollama serve
-
-# En otra terminal, descargar un modelo
-# Para análisis de diagramas + código (multimodal, 4.4GB):
-ollama pull qwen2-vl
-
-# O solo para código (más rápido, 3.8GB):
-ollama pull codellama
-
-# Verificar modelos instalados
-ollama list
-```
-
----
+4. **Al menos un modelo descargado**
 
 ## 🔐 Archivo .env (no incluido en el repo)
 
@@ -218,14 +172,6 @@ Copia el ejemplo de la sección anterior.
 
 ### Ejecución
 
-#### Opción A: Script automático (verifica Ollama)
-
-```bash
-./start.sh
-```
-
-#### Opción B: Solo servidor
-
 ```bash
 ./run.sh
 ```
@@ -238,44 +184,6 @@ uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 ```
 
 El servidor se iniciará en: **http://localhost:8001**
-
----
-
-## � Verificación de Estado
-
-### Verificar configuración de Ollama
-
-```bash
-./check_ollama.sh
-```
-
-Muestra:
-- ✅/❌ Si Ollama está instalado
-- ✅/❌ Si Ollama está corriendo
-- 📦 Modelos instalados
-- 💡 Sugerencias de modelos recomendados
-
-### Verificar configuración de Python
-
-```bash
-source .venv/bin/activate
-python test_setup.py
-```
-
-Verifica:
-- Todas las importaciones
-- Schemas Pydantic
-- Configuración de variables de entorno
-
-### Verificar servidor
-
-```bash
-# Health check
-curl http://localhost:8001/
-
-# Debería devolver:
-# {"message":"FastAPI IA service running","status":"ok"}
-```
 
 ---
 
@@ -414,114 +322,6 @@ El servicio maneja automáticamente estos formatos y extrae el contenido en la f
 
 ---
 
-## 📝 Mejoras Implementadas
-
-### Arquitectura y Código
-- ✅ **Type hints completos** - Mejor autocompletado y detección de errores
-- ✅ **Compatibilidad Python 3.9+** - Usando `Optional[]` en lugar de `|`
-- ✅ **Docstrings completos** - En todas las funciones con descripción de parámetros
-- ✅ **Validación robusta** - Límite de tamaño de imagen (10MB), validación de entrada
-- ✅ **Manejo de errores específico** - HTTPException con códigos apropiados (400, 500, 503)
-
-### Logging y Monitoreo
-- ✅ **Logging detallado** - Trazabilidad completa de requests
-- ✅ **Nivel configurable** - LOG_LEVEL desde variable de entorno
-- ✅ **Formato mejorado** - Timestamp, nivel y nombre del módulo
-
-### Configuración
-- ✅ **CORS configurable** - Soporte para múltiples orígenes
-- ✅ **Variables centralizadas** - Todas en `.env`
-- ✅ **URLs construidas automáticamente** - Desde `OLLAMA_BASE_URL`
-
-### Documentación
-- ✅ **OpenAPI/Swagger** - Documentación automática en `/docs`
-- ✅ **Schemas Pydantic** - Con ejemplos para la documentación
-- ✅ **Scripts automatizados** - Para instalación, ejecución y verificación
-
----
-
-## 🐛 Solución de Problemas
-
-### Error: "No se ha podido resolver la importación"
-
-**Causa:** Dependencias no instaladas o entorno virtual no activado.
-
-**Solución:**
-```bash
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-O ejecuta:
-```bash
-./setup.sh
-```
-
----
-
-### Error: "Connection refused" al llamar a Ollama
-
-**Causa:** Ollama no está corriendo.
-
-**Solución:**
-```bash
-# Verificar que Ollama esté corriendo
-curl http://localhost:11434/api/tags
-
-# Si no responde, iniciarlo
-ollama serve
-
-# O como servicio (macOS)
-brew services start ollama
-```
-
----
-
-### Error: "No hay modelos disponibles"
-
-**Causa:** No tienes modelos descargados en Ollama.
-
-**Solución:**
-```bash
-# Listar modelos
-ollama list
-
-# Si no hay ninguno, descargar uno
-ollama pull qwen2-vl  # Multimodal (recomendado)
-# O
-ollama pull codellama  # Solo código
-```
-
----
-
-### El servidor no inicia (puerto ocupado)
-
-**Causa:** El puerto 8001 está siendo usado por otro proceso.
-
-**Solución:**
-```bash
-# Ver qué proceso usa el puerto
-lsof -ti:8001
-
-# Matar el proceso
-kill -9 $(lsof -ti:8001)
-
-# O cambiar el puerto en .env
-PORT=8002
-```
-
----
-
-### Imagen demasiado grande
-
-**Error:** `400 - Imagen demasiado grande. Máximo 10MB`
-
-**Solución:**
-- Reduce el tamaño de la imagen
-- O modifica el límite en `app/routes/generate.py` (línea ~35)
-
----
-
 ## 🔄 Flujo de Ejecución
 
 ```
@@ -560,86 +360,6 @@ PORT=8002
     │  Response   │ → {"result": "código..."}
     └─────────────┘
 ```
-
----
-
-## ⚠️ Notas Importantes
-
-### Al arrancar el servidor
-
-El servidor FastAPI **NO se conecta a Ollama** al iniciar. Solo:
-1. Carga la configuración (`.env`)
-2. Inicializa FastAPI y registra endpoints
-3. Configura CORS
-4. Imprime logs de inicio
-5. Espera peticiones HTTP
-
-La conexión a Ollama **solo ocurre** cuando se llama a `/models/` o `/generate/`.
-
-### Entorno de desarrollo
-
-- Los errores de Pylance sobre importaciones son normales hasta instalar dependencias
-- Usa el entorno virtual `.venv` para evitar conflictos
-- El modo `--reload` recarga automáticamente al cambiar código
-
-### Producción
-
-- Cambia `HOST` a la IP específica o mantén `0.0.0.0`
-- Ajusta `ALLOWED_ORIGINS` con los dominios reales
-- Usa un gestor de procesos (systemd, supervisor)
-- Considera usar un proxy inverso (nginx)
-- Cambia `LOG_LEVEL` a `WARNING` o `ERROR`
-
----
-
-## 🧩 Próximos pasos
-
-- [ ] Implementar tests unitarios (pytest)
-- [ ] Añadir streaming de respuestas desde Ollama
-- [ ] Implementar caché de respuestas
-- [ ] Integrar con el Gateway Node.js
-- [ ] Añadir parseo estructurado del código generado
-- [ ] Añadir métricas y monitoreo
-- [ ] Dockerizar la aplicación
-- [ ] Implementar rate limiting
-- [ ] Añadir autenticación/autorización
-
----
-
-## 🧾 Comandos Útiles
-
-| Acción | Comando |
-|--------|---------|
-| **Instalación** | |
-| Crear entorno virtual | `python -m venv .venv` |
-| Activar entorno (macOS/Linux) | `source .venv/bin/activate` |
-| Activar entorno (Windows) | `.venv\Scripts\Activate.ps1` |
-| Instalar dependencias | `pip install -r requirements.txt` |
-| Instalación completa | `./setup.sh` |
-| **Ollama** | |
-| Iniciar Ollama | `ollama serve` |
-| Iniciar como servicio (macOS) | `brew services start ollama` |
-| Listar modelos | `ollama list` |
-| Descargar modelo | `ollama pull qwen2-vl` |
-| Probar modelo | `ollama run qwen2-vl` |
-| **Servidor** | |
-| Ejecutar servidor (completo) | `./start.sh` |
-| Ejecutar servidor (solo API) | `./run.sh` |
-| Ejecutar manualmente | `uvicorn app.main:app --reload` |
-| Ver logs en tiempo real | `tail -f uvicorn.log` |
-| **Verificación** | |
-| Verificar Ollama | `./check_ollama.sh` |
-| Verificar configuración | `python test_setup.py` |
-| Health check | `curl http://localhost:8001/` |
-| Listar modelos | `curl http://localhost:8001/models/` |
-| **Testing** | |
-| Probar endpoints | Abrir http://localhost:8001/docs |
-| Generar código | Ver ejemplos en sección de endpoints |
-| **Detener** | |
-| Detener servidor | `Ctrl + C` |
-| Detener Ollama (servicio) | `brew services stop ollama` |
-| Detener Ollama (manual) | `Ctrl + C` |
-
 ---
 
 ## 📚 Recursos
@@ -665,41 +385,12 @@ La conexión a Ollama **solo ocurre** cuando se llama a `/models/` o `/generate/
 
 ---
 
-## 👥 Desarrollo
-
-### Estructura del proyecto
-
-El proyecto sigue una arquitectura en capas:
-
-- **Routes** (`app/routes/`): Endpoints de la API
-- **Services** (`app/services/`): Lógica de negocio
-- **Schemas** (`app/schemas/`): Modelos de datos
-- **Core** (`app/core/`): Configuración y utilidades
-
-### Convenciones de código
-
-- Type hints en todas las funciones
-- Docstrings en formato Google
-- Logging en puntos estratégicos
-- Manejo explícito de errores
-- Validación de entrada con Pydantic
-
-### Contribuir
-
-1. Fork el repositorio
-2. Crea una rama: `git checkout -b feature/nueva-funcionalidad`
-3. Haz commit: `git commit -am 'Añade nueva funcionalidad'`
-4. Push: `git push origin feature/nueva-funcionalidad`
-5. Abre un Pull Request
-
----
-
 ## 📄 Licencia
 
-[Especificar licencia del proyecto]
+Hacer más adelante
 
 ---
 
 ## 📧 Contacto
 
-[Información de contacto o links relevantes]
+- 📧 fernandomm1840@gmail.com
