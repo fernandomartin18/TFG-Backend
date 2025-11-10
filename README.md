@@ -10,15 +10,9 @@ Backend de la aplicación que genera código híbrido a partir de **diagramas de
 - [⚙️ Qué hace cada módulo](#️-qué-hace-cada-módulo)
 - [🔐 Archivo .env](#-archivo-env-no-incluido-en-el-repo)
 - [🚀 Instalación y Ejecución](#-instalación-y-ejecución-local)
-- [🔍 Verificación de Estado](#-verificación-de-estado)
 - [🧪 Endpoints Disponibles](#-endpoints-disponibles)
 - [🧰 Estructura de Respuesta de Ollama](#-estructura-de-respuesta-de-ollama)
-- [📝 Mejoras Implementadas](#-mejoras-implementadas)
-- [🐛 Solución de Problemas](#-solución-de-problemas)
 - [🔄 Flujo de Ejecución](#-flujo-de-ejecución)
-- [⚠️ Notas Importantes](#️-notas-importantes)
-- [🧩 Próximos Pasos](#-próximos-pasos)
-- [🧾 Comandos Útiles](#-comandos-útiles)
 - [📚 Recursos](#-recursos)
 
 ---
