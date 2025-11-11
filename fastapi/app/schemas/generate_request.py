@@ -41,3 +41,31 @@ class ModelInfo(BaseModel):
 class ModelsResponse(BaseModel):
     """Response model for listing models"""
     models: list[ModelInfo]
+
+
+class UnloadRequest(BaseModel):
+    """Request model for unloading a model from memory"""
+    model: str = Field(..., description="Nombre del modelo a descargar de memoria")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "model": "qwen2-vl"
+            }
+        }
+
+
+class UnloadResponse(BaseModel):
+    """Response model for model unload operation"""
+    success: bool = Field(..., description="Si la operación fue exitosa")
+    message: str = Field(..., description="Mensaje descriptivo del resultado")
+    model: str = Field(..., description="Nombre del modelo descargado")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "message": "Modelo qwen2-vl descargado de memoria exitosamente",
+                "model": "qwen2-vl"
+            }
+        }

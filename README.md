@@ -230,6 +230,39 @@ curl http://localhost:8001/models/
 
 ---
 
+### 🗑️ POST /models/unload - Descargar Modelo de Memoria
+
+**Descripción:** Descarga un modelo de la memoria RAM/VRAM para liberar recursos del sistema.
+
+**Request Body:**
+```json
+{
+  "model": "qwen2-vl"
+}
+```
+
+**Ejemplo:**
+```bash
+curl -X POST "http://localhost:8001/models/unload" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "qwen2-vl"}'
+```
+
+**Respuesta esperada:**
+```json
+{
+  "success": true,
+  "message": "Modelo qwen2-vl descargado de memoria exitosamente",
+  "model": "qwen2-vl"
+}
+```
+
+**Errores posibles:**
+- `503` - Ollama no está corriendo o el modelo no existe
+- `500` - Error al descargar el modelo
+
+---
+
 ### 🔵 POST /generate/ - Generar Código
 
 **Descripción:** Genera código a partir de un prompt y opcionalmente una imagen (diagrama UML).

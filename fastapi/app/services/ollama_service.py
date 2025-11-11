@@ -1,7 +1,7 @@
 import requests
 import base64
 from typing import Dict, Any, Optional
-from app.core.config import OLLAMA_CHAT_URL, OLLAMA_TAGS_URL
+from app.core.config import OLLAMA_CHAT_URL, OLLAMA_TAGS_URL, OLLAMA_GENERATE_URL
 from app.core.logger import logger
 
 
@@ -88,3 +88,57 @@ def generate_with_image(
     }
     
     return _call_ollama(payload)
+
+
+def unload_model(model: str) -> Dict[str, Any]:
+    """
+    Unloads a model from memory to free up resources.
+    
+    This sends a request to Ollama with keep_alive=0 which immediately
+    unloads the model from memory/VRAM.
+    
+    Args:
+        model: Name of the Ollama model to unload
+        
+    Returns:
+        Dictionary with success status
+        
+    Raises:
+        requests.RequestException: If the request fails
+    """
+    try:
+        logger.info(f"Unloading model: {model}")
+        
+        # Sending a request with keep_alive=0 unloads the model
+        payload = {
+            "model": model,
+            "prompt": "",  # Empty prompt
+            "keep_alive": 0  # Immediately unload
+        }
+        
+        resp = requests.post(OLLAMA_GENERATE_URL, json=payload, timeout=30)
+        resp.raise_for_status()
+        
+        logger.info(f"Successfully unloaded model: {model}")
+        return {
+            "success": True,
+            "message": f"Modelo {model} descargado de memoria exitosamente",
+            "model": model
+        }
+        
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to unload model {model}: {str(e)}")
+        return {
+            "success": False,
+            "error": "No se pudo descargar el modelo",
+            "detail": str(e),
+            "model": model
+        }
+    except Exception as e:
+        logger.exception(f"Unexpected error unloading model {model}")
+        return {
+            "success": False,
+            "error": "Error inesperado al descargar el modelo",
+            "detail": str(e),
+            "model": model
+        }

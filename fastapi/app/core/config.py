@@ -7,6 +7,7 @@ load_dotenv()
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_CHAT_URL = f"{OLLAMA_BASE_URL}/api/chat"
 OLLAMA_TAGS_URL = f"{OLLAMA_BASE_URL}/api/tags"
+OLLAMA_GENERATE_URL = f"{OLLAMA_BASE_URL}/api/generate"
 
 # Server configuration
 HOST = os.getenv("HOST", "0.0.0.0")
