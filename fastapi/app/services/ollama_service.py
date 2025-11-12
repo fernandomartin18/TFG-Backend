@@ -1,17 +1,23 @@
 import requests
 import base64
 from typing import Dict, Any, Optional
-from app.core.config import OLLAMA_CHAT_URL, OLLAMA_TAGS_URL, OLLAMA_GENERATE_URL
+from app.core.config import (
+    OLLAMA_CHAT_URL, 
+    OLLAMA_TAGS_URL, 
+    OLLAMA_GENERATE_URL,
+    OLLAMA_TIMEOUT,
+    OLLAMA_TAGS_TIMEOUT
+)
 from app.core.logger import logger
 
 
-def _call_ollama(payload: Dict[str, Any], timeout: int = 120) -> Dict[str, Any]:
+def _call_ollama(payload: Dict[str, Any], timeout: Optional[int] = None) -> Dict[str, Any]:
     """
     Makes a POST request to Ollama's chat endpoint.
     
     Args:
         payload: Request payload containing model and messages
-        timeout: Request timeout in seconds
+        timeout: Request timeout in seconds (uses OLLAMA_TIMEOUT from config if None)
         
     Returns:
         JSON response from Ollama
@@ -19,8 +25,11 @@ def _call_ollama(payload: Dict[str, Any], timeout: int = 120) -> Dict[str, Any]:
     Raises:
         requests.RequestException: If the request fails
     """
+    if timeout is None:
+        timeout = OLLAMA_TIMEOUT
+    
     try:
-        logger.info(f"Calling Ollama with model: {payload.get('model')}")
+        logger.info(f"Calling Ollama with model: {payload.get('model')} (timeout: {timeout}s)")
         resp = requests.post(OLLAMA_CHAT_URL, json=payload, timeout=timeout)
         resp.raise_for_status()
         return resp.json()
@@ -41,7 +50,7 @@ def list_models() -> Dict[str, Any]:
     """
     try:
         logger.info(f"Fetching models from {OLLAMA_TAGS_URL}")
-        resp = requests.get(OLLAMA_TAGS_URL, timeout=10)
+        resp = requests.get(OLLAMA_TAGS_URL, timeout=OLLAMA_TAGS_TIMEOUT)
         resp.raise_for_status()
         data = resp.json()
         logger.info(f"Successfully fetched {len(data.get('models', []))} models")

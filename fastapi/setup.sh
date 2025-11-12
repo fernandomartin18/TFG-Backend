@@ -47,6 +47,12 @@ if [ ! -f ".env" ]; then
     cat > .env << 'EOF'
 # Ollama Configuration
 OLLAMA_BASE_URL=http://localhost:11434
+# Ollama Configuration
+OLLAMA_BASE_URL=http://localhost:11434
+
+# Timeout Configuration (in seconds)
+OLLAMA_TIMEOUT=600
+OLLAMA_TAGS_TIMEOUT=30
 
 # Server Configuration
 HOST=0.0.0.0
@@ -58,9 +64,9 @@ ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 # Logging
 LOG_LEVEL=INFO
 EOF
-    echo -e "${GREEN}Archivo .env creado${NC}"
+    echo -e "${GREEN}✅ Archivo .env creado${NC}"
 else
-    echo -e "${GREEN}Archivo .env encontrado${NC}"
+    echo -e "${GREEN}✅ Archivo .env encontrado${NC}"
 fi
 
 echo ""

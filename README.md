@@ -98,6 +98,11 @@ Debes crear un archivo `.env` en la raíz de `fastapi/` con este contenido:
 # Ollama Configuration
 OLLAMA_BASE_URL=http://localhost:11434
 
+# Timeout Configuration (in seconds)
+# For large models (27B+), increase OLLAMA_TIMEOUT to 600-900 seconds
+OLLAMA_TIMEOUT=600
+OLLAMA_TAGS_TIMEOUT=30
+
 # Server Configuration
 HOST=0.0.0.0
 PORT=8001
@@ -109,7 +114,18 @@ ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 LOG_LEVEL=INFO
 ```
 
+### ⚙️ Configuración de Timeouts
+
+- **OLLAMA_TIMEOUT**: Tiempo máximo de espera para generación de código (default: 600s = 10 min)
+  - Modelos pequeños (7B): 60-120 segundos
+  - Modelos medianos (13B): 120-300 segundos
+  - Modelos grandes (27B+): 600-900 segundos
+  
+- **OLLAMA_TAGS_TIMEOUT**: Tiempo de espera para listar modelos (default: 30s)
+
 **Nota:** El script `setup.sh` crea automáticamente este archivo si no existe.
+
+---
 
 ---
 
@@ -245,7 +261,7 @@ curl http://localhost:8001/models/
 ```bash
 curl -X POST "http://localhost:8001/models/unload" \
   -H "Content-Type: application/json" \
-  -d '{"model": "qwen2-vl"}'
+  -d '{"model": "qwen3-vl:8b"}'
 ```
 
 **Respuesta esperada:**
@@ -275,15 +291,15 @@ curl -X POST "http://localhost:8001/models/unload" \
 **Ejemplo sin imagen:**
 ```bash
 curl -X POST "http://localhost:8001/generate/" \
-  -F "model=qwen2-vl" \
-  -F "prompt=Crea una clase Python para gestionar usuarios con métodos CRUD"
+  -F "model=qwen3-vl:8b" \
+  -F "prompt=Crea una hola mundo en python"
 ```
 
 **Ejemplo con imagen:**
 ```bash
 curl -X POST "http://localhost:8001/generate/" \
-  -F "model=qwen2-vl" \
-  -F "prompt=Analiza el diagrama UML y genera el código Python correspondiente" \
+  -F "model=qwen3-vl:8b" \
+  -F "prompt=Analiza el diagrama UML y devuelve únicamente el código PlantUML correspondiente" \
   -F "image=@/ruta/a/diagrama.png"
 ```
 
@@ -389,7 +405,111 @@ El servicio maneja automáticamente estos formatos y extrae el contenido en la f
 ```
 ---
 
-## 📚 Recursos
+## � Solución de Problemas Comunes
+
+### Timeout con modelos grandes
+
+**Problema:** Error de timeout al usar modelos grandes (gemma3:27b, llama3:70b, etc.)
+
+**Síntomas:**
+```
+requests.exceptions.ReadTimeout: HTTPConnectionPool(host='localhost', port=11434): 
+Read timed out. (read timeout=600)
+```
+
+**Solución:**
+
+1. **Aumentar el timeout en `.env`:**
+```env
+# Para modelos 27B+
+OLLAMA_TIMEOUT=900
+
+# Para modelos 70B+
+OLLAMA_TIMEOUT=1800
+```
+
+2. **Reiniciar el servidor:**
+```bash
+# Detener el servidor (Ctrl+C)
+# Reiniciar
+./run.sh
+```
+
+3. **Verificar que se aplicó:**
+```bash
+# Los logs deberían mostrar:
+# "Calling Ollama with model: gemma3:27b (timeout: 900s)"
+```
+
+**Recomendaciones por tamaño de modelo:**
+- **7B** (llama3.2, mistral): 60-120 segundos
+- **13B** (llama3.1:13b): 120-300 segundos
+- **27B** (gemma3:27b): 600-900 segundos
+- **70B+** (llama3:70b): 1200-1800 segundos (20-30 min)
+
+---
+
+### Request timeout en el cliente
+
+**Problema:** El cliente (curl, navegador) se desconecta antes de recibir respuesta.
+
+**Solución con curl:**
+```bash
+# Aumentar el timeout del cliente
+curl --max-time 900 -X POST "http://localhost:8001/generate/" \
+  -F "model=gemma3:27b" \
+  -F "prompt=Tu prompt" \
+  -F "image=@imagen.png"
+```
+
+**Solución en código JavaScript/TypeScript:**
+```javascript
+// Aumentar timeout en fetch
+const controller = new AbortController();
+const timeoutId = setTimeout(() => controller.abort(), 900000); // 15 min
+
+fetch('http://localhost:8001/generate/', {
+  method: 'POST',
+  body: formData,
+  signal: controller.signal
+})
+  .finally(() => clearTimeout(timeoutId));
+```
+
+---
+
+### Imagen demasiado grande
+
+**Error:** `400 - Imagen demasiado grande. Máximo 10MB`
+
+**Solución:**
+1. Reducir el tamaño de la imagen
+2. O modificar el límite en `app/routes/generate.py`:
+```python
+# Línea ~35
+if len(image_bytes) > 20 * 1024 * 1024:  # Aumentar a 20MB
+```
+
+---
+
+### Modelo no cargado/Respuesta lenta
+
+**Problema:** La primera petición a un modelo tarda mucho.
+
+**Causa:** Ollama carga el modelo en memoria en la primera petición.
+
+**Solución:**
+```bash
+# Pre-cargar el modelo antes de usarlo
+ollama run gemma3:27b "test"
+# Ctrl+D para salir
+
+# Ahora el modelo está en memoria y responderá más rápido
+```
+
+---
+
+## �📚 Recursos
 
 - [Documentación de FastAPI](https://fastapi.tiangolo.com/)
 - [Documentación de Ollama](https://ollama.ai/docs)
