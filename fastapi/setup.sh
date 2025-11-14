@@ -13,7 +13,7 @@ NC='\033[0m'
 # 1. Verificar Python
 echo -e "${BLUE}Verificando Python...${NC}"
 if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}❌ Python 3 no está instalado${NC}"
+    echo -e "${RED}Python 3 no está instalado${NC}"
     exit 1
 fi
 python3 --version
@@ -64,9 +64,9 @@ ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 # Logging
 LOG_LEVEL=INFO
 EOF
-    echo -e "${GREEN}✅ Archivo .env creado${NC}"
+    echo -e "${GREEN}Archivo .env creado${NC}"
 else
-    echo -e "${GREEN}✅ Archivo .env encontrado${NC}"
+    echo -e "${GREEN}Archivo .env encontrado${NC}"
 fi
 
 echo ""
