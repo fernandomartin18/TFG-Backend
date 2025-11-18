@@ -35,12 +35,12 @@ El backend está dividido en dos capas:
 ollama serve
 
 # Terminal 2: Iniciar servidor FastAPI
-cd fastapi
+cd backend/llmapi
 ./setup.sh  # Solo la primera vez
 ./run.sh
 
 # Terminal 3: Iniciar API Gateway de Node.js
-cd node
+cd backend
 npm install  # Solo la primera vez
 npm run dev
 ```
@@ -56,30 +56,30 @@ Los servidores estarán disponibles en:
 ## 📂 Estructura del proyecto
 
 ```
-tfg-backend/
-├── node/                         # API Gateway (Express + Node.js)
-│   ├── src/
-│   │   ├── server.js            # Punto de entrada del servidor Express
-│   │   ├── config/
-│   │   │   └── index.js         # Configuración centralizada
-│   │   ├── routes/
-│   │   │   ├── index.js         # Registro de rutas
-│   │   │   ├── models.routes.js # Rutas de modelos
-│   │   │   └── generate.routes.js # Rutas de generación
-│   │   ├── controllers/
-│   │   │   ├── models.controller.js   # Lógica de modelos
-│   │   │   └── generate.controller.js # Lógica de generación
-│   │   ├── services/
-│   │   │   └── ollama.service.js # Cliente HTTP para FastAPI
-│   │   ├── middlewares/
-│   │   │   └── error.middleware.js # Manejo de errores
-│   │   └── utils/
-│   │       └── logger.js        # Sistema de logging
-│   ├── package.json
-│   ├── .env
-│   └── README.md
+backend/
+├── src/                          # API Gateway (Express + Node.js)
+│   ├── server.js                # Punto de entrada del servidor Express
+│   ├── config/
+│   │   └── index.js             # Configuración centralizada
+│   ├── routes/
+│   │   ├── index.js             # Registro de rutas
+│   │   ├── models.routes.js     # Rutas de modelos
+│   │   └── generate.routes.js   # Rutas de generación
+│   ├── controllers/
+│   │   ├── models.controller.js     # Lógica de modelos
+│   │   └── generate.controller.js   # Lógica de generación
+│   ├── services/
+│   │   └── ollama.service.js    # Cliente HTTP para FastAPI
+│   ├── middlewares/
+│   │   └── error.middleware.js  # Manejo de errores
+│   └── utils/
+│       └── logger.js            # Sistema de logging
+├── package.json
+├── .env
+├── .gitignore
+├── README.md
 │
-└── fastapi/                      # Backend de IA (FastAPI + Python)
+└── llmapi/                       # Backend de IA (FastAPI + Python)
     ├── app/
     │   ├── __init__.py
     │   ├── main.py
@@ -94,8 +94,10 @@ tfg-backend/
     │       ├── config.py        # Variables de entorno
     │       └── logger.py        # Logging
     ├── requirements.txt
+    ├── setup.sh
+    ├── run.sh
     ├── .env
-    └── README.md
+    └── .venv/
 ```
 
 ---
@@ -148,9 +150,9 @@ Se encarga de comunicarse con **Ollama** (modelos locales de IA), procesar imá
 
 ## 🔐 Configuración de Variables de Entorno
 
-### Node.js API Gateway (.env en node/)
+### Node.js API Gateway (.env en la raíz)
 
-Crea un archivo `.env` en la carpeta `node/`:
+Crea un archivo `.env` en la carpeta raíz de `backend/`:
 
 ```env
 # FastAPI Backend
@@ -171,9 +173,9 @@ ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
 LOG_LEVEL=info
 ```
 
-### FastAPI Backend (.env en fastapi/)
+### FastAPI Backend (.env en llmapi/)
 
-Crea un archivo `.env` en la carpeta `fastapi/`:
+Crea un archivo `.env` en la carpeta `llmapi/`:
 
 ```env
 # Ollama Configuration
@@ -215,14 +217,13 @@ LOG_LEVEL=INFO
 
 ```bash
 # 1. Instalar y configurar FastAPI
-cd tfg-backend/fastapi
+cd backend/llmapi
 ./setup.sh  # Crea .venv, instala dependencias, crea .env
-cd ..
+cd ../..
 
 # 2. Instalar y configurar Node.js
-cd node
+cd backend
 npm install  # Instala todas las dependencias
-cd ..
 ```
 
 ### ▶️ Ejecución completa
@@ -232,11 +233,11 @@ cd ..
 ollama serve
 
 # Terminal 2: Iniciar FastAPI
-cd tfg-backend/fastapi
+cd backend/llmapi
 ./run.sh
 
 # Terminal 3: Iniciar Node.js API Gateway
-cd tfg-backend/node
+cd backend
 npm run dev
 ```
 
@@ -245,7 +246,7 @@ npm run dev
 #### 1️⃣ Navegar a la carpeta
 
 ```bash
-cd tfg-backend/fastapi
+cd backend/llmapi
 ```
 
 #### 2️⃣ Crear entorno virtual
