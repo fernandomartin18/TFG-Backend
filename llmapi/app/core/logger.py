@@ -1,7 +1,7 @@
 import logging
 import os
 
-# Get log level from environment
+# Obtener nivel de log desde el entorno
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 
 logging.basicConfig(

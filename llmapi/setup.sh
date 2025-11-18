@@ -13,7 +13,7 @@ NC='\033[0m'
 # 1. Verificar Python
 echo -e "${BLUE}Verificando Python...${NC}"
 if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}❌ Python 3 no está instalado${NC}"
+    echo -e "${RED}Python 3 no está instalado${NC}"
     exit 1
 fi
 python3 --version
@@ -47,6 +47,12 @@ if [ ! -f ".env" ]; then
     cat > .env << 'EOF'
 # Ollama Configuration
 OLLAMA_BASE_URL=http://localhost:11434
+# Ollama Configuration
+OLLAMA_BASE_URL=http://localhost:11434
+
+# Timeout Configuration (in seconds)
+OLLAMA_TIMEOUT=600
+OLLAMA_TAGS_TIMEOUT=30
 
 # Server Configuration
 HOST=0.0.0.0
