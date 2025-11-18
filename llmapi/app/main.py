@@ -5,7 +5,7 @@ from app.core.logger import logger
 from app.routes import generate, models
 
 app = FastAPI(
-    title="IA Service - FastAPI (Ollama)",
+    title="Servicio IA - FastAPI (Ollama)",
     description="API para generación de código usando Ollama",
     version="1.0.0"
 )
@@ -19,26 +19,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(models.router, prefix="/models", tags=["Models"])
-app.include_router(generate.router, prefix="/generate", tags=["Generate"])
+# Incluir routers
+app.include_router(models.router, prefix="/models", tags=["Modelos"])
+app.include_router(generate.router, prefix="/generate", tags=["Generar"])
 
-@app.get("/", tags=["Health"])
+@app.get("/", tags=["Salud"])
 def root():
-    """Health check endpoint"""
-    return {"message": "FastAPI IA service running", "status": "ok"}
+    """Endpoint de verificación de salud"""
+    return {"message": "Servicio IA FastAPI en ejecución", "status": "ok"}
 
 @app.on_event("startup")
 async def startup_event():
-    logger.info("FastAPI application starting...")
-    logger.info(f"Server will run on {HOST}:{PORT}")
-    logger.info(f"CORS enabled for origins: {ALLOWED_ORIGINS}")
+    logger.info("Aplicación FastAPI iniciando...")
+    logger.info(f"El servidor se ejecutará en {HOST}:{PORT}")
+    logger.info(f"CORS habilitado para orígenes: {ALLOWED_ORIGINS}")
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    logger.info("FastAPI application shutting down...")
+    logger.info("Aplicación FastAPI cerrándose...")
 
 if __name__ == "__main__":
     import uvicorn
-    logger.info(f"Starting FastAPI on {HOST}:{PORT}")
+    logger.info(f"Iniciando FastAPI en {HOST}:{PORT}")
     uvicorn.run("app.main:app", host=HOST, port=PORT, reload=True)

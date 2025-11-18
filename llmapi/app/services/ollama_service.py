@@ -13,53 +13,53 @@ from app.core.logger import logger
 
 def _call_ollama(payload: Dict[str, Any], timeout: Optional[int] = None) -> Dict[str, Any]:
     """
-    Makes a POST request to Ollama's chat endpoint.
+    Realiza una petición POST al endpoint de chat de Ollama.
     
     Args:
-        payload: Request payload containing model and messages
-        timeout: Request timeout in seconds (uses OLLAMA_TIMEOUT from config if None)
+        payload: Datos de la petición conteniendo modelo y mensajes
+        timeout: Tiempo de espera de la petición en segundos (usa OLLAMA_TIMEOUT de config si es None)
         
     Returns:
-        JSON response from Ollama
+        Respuesta JSON de Ollama
         
     Raises:
-        requests.RequestException: If the request fails
+        requests.RequestException: Si la petición falla
     """
     if timeout is None:
         timeout = OLLAMA_TIMEOUT
     
     try:
-        logger.info(f"Calling Ollama with model: {payload.get('model')} (timeout: {timeout}s)")
+        logger.info(f"Llamando a Ollama con modelo: {payload.get('model')} (timeout: {timeout}s)")
         resp = requests.post(OLLAMA_CHAT_URL, json=payload, timeout=timeout)
         resp.raise_for_status()
         return resp.json()
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error calling Ollama: {str(e)}")
+        logger.error(f"Error llamando a Ollama: {str(e)}")
         raise
     except Exception as e:
-        logger.exception("Unexpected error calling Ollama")
+        logger.exception("Error inesperado llamando a Ollama")
         raise
 
 
 def list_models() -> Dict[str, Any]:
     """
-    Fetches the list of available models from Ollama.
+    Obtiene la lista de modelos disponibles de Ollama.
     
     Returns:
-        Dictionary containing model information
+        Diccionario conteniendo información de los modelos
     """
     try:
-        logger.info(f"Fetching models from {OLLAMA_TAGS_URL}")
+        logger.info(f"Obteniendo modelos desde {OLLAMA_TAGS_URL}")
         resp = requests.get(OLLAMA_TAGS_URL, timeout=OLLAMA_TAGS_TIMEOUT)
         resp.raise_for_status()
         data = resp.json()
-        logger.info(f"Successfully fetched {len(data.get('models', []))} models")
+        logger.info(f"Se obtuvieron exitosamente {len(data.get('models', []))} modelos")
         return data
     except requests.exceptions.RequestException as e:
-        logger.error(f"Failed to list models: {str(e)}")
+        logger.error(f"Fallo al listar modelos: {str(e)}")
         return {"error": "No se pudo listar modelos", "detail": str(e)}
     except Exception as e:
-        logger.exception("Unexpected error listing models")
+        logger.exception("Error inesperado al listar modelos")
         return {"error": "Error inesperado al listar modelos", "detail": str(e)}
 
 
@@ -69,15 +69,15 @@ def generate_with_image(
     image_bytes: Optional[bytes] = None
 ) -> Dict[str, Any]:
     """
-    Generates a response from Ollama, optionally including an image.
+    Genera una respuesta desde Ollama, opcionalmente incluyendo una imagen.
     
     Args:
-        model: Name of the Ollama model to use
-        prompt: Text prompt for generation
-        image_bytes: Optional image data as bytes
+        model: Nombre del modelo Ollama a usar
+        prompt: Texto del prompt para la generación
+        image_bytes: Datos opcionales de imagen como bytes
         
     Returns:
-        Dictionary containing the generation response
+        Diccionario conteniendo la respuesta de generación
     """
     messages = [{"role": "user", "content": prompt}]
     
@@ -85,10 +85,10 @@ def generate_with_image(
         try:
             img_b64 = base64.b64encode(image_bytes).decode("utf-8")
             messages[0]["images"] = [img_b64]
-            logger.info(f"Image encoded, size: {len(image_bytes)} bytes")
+            logger.info(f"Imagen codificada, tamaño: {len(image_bytes)} bytes")
         except Exception as e:
-            logger.error(f"Failed to encode image: {str(e)}")
-            raise ValueError(f"Error encoding image: {str(e)}")
+            logger.error(f"Fallo al codificar imagen: {str(e)}")
+            raise ValueError(f"Error codificando imagen: {str(e)}")
 
     payload = {
         "model": model,
@@ -101,34 +101,34 @@ def generate_with_image(
 
 def unload_model(model: str) -> Dict[str, Any]:
     """
-    Unloads a model from memory to free up resources.
+    Descarga un modelo de memoria para liberar recursos.
     
-    This sends a request to Ollama with keep_alive=0 which immediately
-    unloads the model from memory/VRAM.
+    Esto envía una petición a Ollama con keep_alive=0 que inmediatamente
+    descarga el modelo de memoria/VRAM.
     
     Args:
-        model: Name of the Ollama model to unload
+        model: Nombre del modelo Ollama a descargar
         
     Returns:
-        Dictionary with success status
+        Diccionario con estado de éxito
         
     Raises:
-        requests.RequestException: If the request fails
+        requests.RequestException: Si la petición falla
     """
     try:
-        logger.info(f"Unloading model: {model}")
+        logger.info(f"Descargando modelo: {model}")
         
-        # Sending a request with keep_alive=0 unloads the model
+        # Enviar una petición con keep_alive=0 descarga el modelo
         payload = {
             "model": model,
-            "prompt": "",  # Empty prompt
-            "keep_alive": 0  # Immediately unload
+            "prompt": "",  # Prompt vacío
+            "keep_alive": 0  # Descargar inmediatamente
         }
         
         resp = requests.post(OLLAMA_GENERATE_URL, json=payload, timeout=30)
         resp.raise_for_status()
         
-        logger.info(f"Successfully unloaded model: {model}")
+        logger.info(f"Modelo descargado exitosamente: {model}")
         return {
             "success": True,
             "message": f"Modelo {model} descargado de memoria exitosamente",
@@ -136,7 +136,7 @@ def unload_model(model: str) -> Dict[str, Any]:
         }
         
     except requests.exceptions.RequestException as e:
-        logger.error(f"Failed to unload model {model}: {str(e)}")
+        logger.error(f"Fallo al descargar modelo {model}: {str(e)}")
         return {
             "success": False,
             "error": "No se pudo descargar el modelo",
@@ -144,7 +144,7 @@ def unload_model(model: str) -> Dict[str, Any]:
             "model": model
         }
     except Exception as e:
-        logger.exception(f"Unexpected error unloading model {model}")
+        logger.exception(f"Error inesperado al descargar modelo {model}")
         return {
             "success": False,
             "error": "Error inesperado al descargar el modelo",

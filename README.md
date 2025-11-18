@@ -5,60 +5,118 @@ Backend de la aplicación que genera código híbrido a partir de **diagramas de
 ## 📑 Índice
 
 - [🚀 Inicio Rápido](#-inicio-rápido)
-- [📋 Requisitos Previos](#-requisitos-previos)
 - [📂 Estructura del Proyecto](#-estructura-del-proyecto)
+- [🧠 Arquitectura de dos capas](#-arquitectura-de-dos-capas)
 - [⚙️ Qué hace cada módulo](#️-qué-hace-cada-módulo)
-- [🔐 Archivo .env](#-archivo-env-no-incluido-en-el-repo)
-- [🚀 Instalación y Ejecución](#-instalación-y-ejecución-local)
+- [📋 Requisitos Previos](#-requisitos-previos)
+- [🔐 Configuración de Variables de Entorno](#-configuración-de-variables-de-entorno)
+- [🚀 Instalación y Ejecución Local](#-instalación-y-ejecución-local)
 - [🧪 Endpoints Disponibles](#-endpoints-disponibles)
 - [🧰 Estructura de Respuesta de Ollama](#-estructura-de-respuesta-de-ollama)
 - [🔄 Flujo de Ejecución](#-flujo-de-ejecución)
+- [🛠️ Solución de Problemas Comunes](#️-solución-de-problemas-comunes)
 - [📚 Recursos](#-recursos)
+- [📊 Tecnologías Utilizadas](#-tecnologías-utilizadas)
+- [📄 Licencia](#-licencia)
+- [📧 Contacto](#-contacto)
 
 ---
 
 ## 🚀 Inicio Rápido
+
+### Arquitectura del Backend
+
+El backend está dividido en dos capas:
+- **Node.js API Gateway** (Puerto 3000): Punto de entrada para el frontend, maneja autenticación y orquestación
+- **FastAPI** (Puerto 8001): Procesamiento de IA y comunicación con Ollama
 
 ```bash
 # Terminal 1: Iniciar Ollama
 ollama serve
 
 # Terminal 2: Iniciar servidor FastAPI
-cd fastapi
+cd backend/llmapi
 ./setup.sh  # Solo la primera vez
 ./run.sh
+
+# Terminal 3: Iniciar API Gateway de Node.js
+cd backend
+npm install  # Solo la primera vez
+npm run dev
 ```
 
-El servidor estará disponible en: **http://localhost:8001**
-- **API Docs**: http://localhost:8001/docs
-- **ReDoc**: http://localhost:8001/redoc
+Los servidores estarán disponibles en:
+- **Node.js API Gateway**: http://localhost:3000
+- **FastAPI**: http://localhost:8001
+- **API Docs (FastAPI)**: http://localhost:8001/docs
+- **ReDoc (FastAPI)**: http://localhost:8001/redoc
 
 ---
 
 ## 📂 Estructura del proyecto
 
 ```
-tfg-backend/
-├── fastapi/
-│   ├── app/
-│   │   ├── __init__.py
-│   │   ├── main.py
-│   │   ├── routes/
-│   │   │   ├── generate.py      # Endpoint principal: genera código a partir de texto o imagen
-│   │   │   └── models.py         # Endpoint auxiliar: lista modelos disponibles en Ollama
-│   │   ├── services/
-│   │   │   └── ollama_service.py # Conexión HTTP con Ollama, manejo de imágenes base64
-│   │   ├── schemas/
-│   │   │   └── generate_request.py # Modelos de datos (entrada/salida) con Pydantic
-│   │   └── core/
-│   │       ├── config.py         # Carga de variables de entorno (.env)
-│   │       └── logger.py         # Configuración básica de logging
-│   │
-│   ├── requirements.txt          # Dependencias de Python
-│   ├── .env                      # Variables de entorno (NO se sube al repositorio)
-│   └── README.md                 # Este archivo
-└── node/                         # API Gateway (Node.js)
+backend/
+├── src/                          # API Gateway (Express + Node.js)
+│   ├── server.js                # Punto de entrada del servidor Express
+│   ├── config/
+│   │   └── index.js             # Configuración centralizada
+│   ├── routes/
+│   │   ├── index.js             # Registro de rutas
+│   │   ├── models.routes.js     # Rutas de modelos
+│   │   └── generate.routes.js   # Rutas de generación
+│   ├── controllers/
+│   │   ├── models.controller.js     # Lógica de modelos
+│   │   └── generate.controller.js   # Lógica de generación
+│   ├── services/
+│   │   └── ollama.service.js    # Cliente HTTP para FastAPI
+│   ├── middlewares/
+│   │   └── error.middleware.js  # Manejo de errores
+│   └── utils/
+│       └── logger.js            # Sistema de logging
+├── package.json
+├── .env
+├── .gitignore
+├── README.md
+│
+└── llmapi/                       # Backend de IA (FastAPI + Python)
+    ├── app/
+    │   ├── __init__.py
+    │   ├── main.py
+    │   ├── routes/
+    │   │   ├── generate.py      # Endpoint de generación de código
+    │   │   └── models.py        # Endpoint de modelos
+    │   ├── services/
+    │   │   └── ollama_service.py # Comunicación con Ollama
+    │   ├── schemas/
+    │   │   └── generate_request.py # Modelos Pydantic
+    │   └── core/
+    │       ├── config.py        # Variables de entorno
+    │       └── logger.py        # Logging
+    ├── requirements.txt
+    ├── setup.sh
+    ├── run.sh
+    ├── .env
+    └── .venv/
 ```
+
+---
+
+## 🧠 Arquitectura de dos capas
+
+### 🟢 Node.js API Gateway (Puerto 3000)
+Punto de entrada para el frontend. Se encarga de:
+- Recibir peticiones del frontend React
+- Validación inicial y manejo de archivos
+- Proxy a FastAPI para procesamiento de IA
+- Futuras features: autenticación, historial de chats, gestión de usuarios
+
+### 🔵 FastAPI (Puerto 8001)
+Backend especializado en IA. Se encarga de:
+- Comunicación con **Ollama** (modelos locales de IA)
+- Procesamiento de imágenes y conversión a base64
+- Generación de código híbrido
+- Gestión de modelos y timeouts configurables
 
 ---
 
@@ -90,9 +148,34 @@ Se encarga de comunicarse con **Ollama** (modelos locales de IA), procesar imá
    - Verificar instalación: `ollama --version`
 4. **Al menos un modelo descargado**
 
-## 🔐 Archivo .env (no incluido en el repo)
+## 🔐 Configuración de Variables de Entorno
 
-Debes crear un archivo `.env` en la raíz de `fastapi/` con este contenido:
+### Node.js API Gateway (.env en la raíz)
+
+Crea un archivo `.env` en la carpeta raíz de `backend/`:
+
+```env
+# FastAPI Backend
+FASTAPI_URL=http://localhost:8001
+
+# Server Configuration
+PORT=3000
+NODE_ENV=development
+
+# Request Configuration
+REQUEST_TIMEOUT=600000  # 10 minutos en ms (para modelos grandes)
+MAX_FILE_SIZE=10485760  # 10MB en bytes
+
+# CORS Configuration (comma-separated)
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
+
+# Logging
+LOG_LEVEL=info
+```
+
+### FastAPI Backend (.env en llmapi/)
+
+Crea un archivo `.env` en la carpeta `llmapi/`:
 
 ```env
 # Ollama Configuration
@@ -116,40 +199,54 @@ LOG_LEVEL=INFO
 
 ### ⚙️ Configuración de Timeouts
 
-- **OLLAMA_TIMEOUT**: Tiempo máximo de espera para generación de código (default: 600s = 10 min)
+- **REQUEST_TIMEOUT** (Node.js): Tiempo máximo en milisegundos para requests HTTP
+- **OLLAMA_TIMEOUT** (FastAPI): Tiempo máximo de espera para generación de código
   - Modelos pequeños (7B): 60-120 segundos
   - Modelos medianos (13B): 120-300 segundos
   - Modelos grandes (27B+): 600-900 segundos
   
-- **OLLAMA_TAGS_TIMEOUT**: Tiempo de espera para listar modelos (default: 30s)
+- **OLLAMA_TAGS_TIMEOUT** (FastAPI): Tiempo de espera para listar modelos (default: 30s)
 
-**Nota:** El script `setup.sh` crea automáticamente este archivo si no existe.
-
----
+**Nota:** Los scripts de setup crean automáticamente estos archivos si no existen.
 
 ---
 
-## 🚀 Instalación y ejecución local
+## 🚀 Instalación y Ejecución Local
 
-### Instalación Automática (Recomendado)
+### 📦 Instalación completa (ambos servicios)
 
 ```bash
-cd tfg-backend/fastapi
-./setup.sh
+# 1. Instalar y configurar FastAPI
+cd backend/llmapi
+./setup.sh  # Crea .venv, instala dependencias, crea .env
+cd ../..
+
+# 2. Instalar y configurar Node.js
+cd backend
+npm install  # Instala todas las dependencias
 ```
 
-Esto hace:
-1. Verifica Python 3.10+
-2. Crea entorno virtual `.venv`
-3. Instala todas las dependencias
-4. Crea archivo `.env` si no existe
+### ▶️ Ejecución completa
 
-### Instalación Manual
+```bash
+# Terminal 1: Iniciar Ollama (debe estar corriendo siempre)
+ollama serve
+
+# Terminal 2: Iniciar FastAPI
+cd backend/llmapi
+./run.sh
+
+# Terminal 3: Iniciar Node.js API Gateway
+cd backend
+npm run dev
+```
+
+### 🔵 FastAPI - Instalación Manual
 
 #### 1️⃣ Navegar a la carpeta
 
 ```bash
-cd tfg-backend/fastapi
+cd backend/llmapi
 ```
 
 #### 2️⃣ Crear entorno virtual
@@ -180,26 +277,93 @@ pip install -r requirements.txt
 
 Copia el ejemplo de la sección anterior.
 
-### Ejecución
+### Ejecución de FastAPI
 
+**Opción A: Script automático**
 ```bash
 ./run.sh
 ```
 
-#### Opción C: Manual
-
+**Opción B: Manual**
 ```bash
 source .venv/bin/activate
 uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 ```
 
-El servidor se iniciará en: **http://localhost:8001**
-
 ---
 
 ## 🧪 Endpoints disponibles
 
-### 🟢 GET / - Health Check
+### 🌐 Node.js API Gateway (Puerto 3000)
+
+Todos los endpoints del frontend deben apuntar a `http://localhost:3000/api`
+
+#### 🟢 GET /api/models
+
+**Descripción:** Obtiene la lista de modelos disponibles en Ollama
+
+**Request:**
+```bash
+curl http://localhost:3000/api/models
+```
+
+**Response:**
+```json
+{
+  "models": [
+    {
+      "name": "gemma3:27b",
+      "modified_at": "2024-01-15T10:30:00Z",
+      "size": 27000000000
+    }
+  ]
+}
+```
+
+#### 🟢 POST /api/generate
+
+**Descripción:** Genera código a partir de texto o imagen
+
+**Request con texto:**
+```bash
+curl -X POST http://localhost:3000/api/generate \
+  -F "model=qwen2.5-coder:14b" \
+  -F "prompt=Crea un hola mundo en python"
+```
+
+**Request con imagen:**
+```bash
+curl -X POST http://localhost:3000/api/generate \
+  -F "model=qwen3-vl:8b" \
+  -F "prompt=Generate the PlantUML code from this diagram" \
+  -F "image=@./iterator.png"
+```
+
+**Response:**
+```json
+{
+  "model": "gemma3:27b",
+  "content": "public class User { ... }"
+}
+```
+
+#### 🟢 POST /api/models/unload
+
+**Descripción:** Descarga un modelo de la memoria
+
+**Request:**
+```bash
+curl -X POST http://localhost:3000/api/models/unload \
+  -H "Content-Type: application/json" \
+  -d '{"model": "qwen3-vl:8b"}'
+```
+
+### 🔧 FastAPI (Puerto 8001)
+
+Endpoints directos de FastAPI (normalmente solo usados internamente por el API Gateway)
+
+#### 🟢 GET / - Health Check
+
 
 **Descripción:** Verifica que el servidor está activo.
 
