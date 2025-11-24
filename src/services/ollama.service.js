@@ -72,6 +72,47 @@ class OllamaService {
   }
 
   /**
+   * Genera código con streaming a partir de un prompt y opcionalmente una imagen
+   * @param {string} model - Nombre del modelo
+   * @param {string} prompt - Prompt para la generación
+   * @param {Buffer} imageBuffer - Buffer de la imagen (opcional)
+   * @param {string} imageMimeType - Tipo MIME de la imagen (opcional)
+   * @returns {Promise<Stream>} Stream de respuesta
+   */
+  async generateCodeStream(model, prompt, imageBuffer = null, imageMimeType = null) {
+    try {
+      const formData = new FormData();
+      formData.append('model', model);
+      formData.append('prompt', prompt);
+
+      if (imageBuffer && imageMimeType) {
+        formData.append('image', imageBuffer, {
+          filename: 'image.png',
+          contentType: imageMimeType,
+        });
+        logger.info(`Starting streaming generation with model: ${model}, prompt length: ${prompt.length}, image size: ${imageBuffer.length} bytes`);
+      } else {
+        logger.info(`Starting streaming generation with model: ${model}, prompt length: ${prompt.length}`);
+      }
+
+      const response = await axios.post(`${this.baseURL}/generate/stream`, formData, {
+        headers: {
+          ...formData.getHeaders(),
+        },
+        timeout: this.timeout,
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+        responseType: 'stream',
+      });
+
+      return response.data;
+    } catch (error) {
+      logger.error('Error in streaming generation:', error.message);
+      throw this._handleError(error);
+    }
+  }
+
+  /**
    * Descarga un modelo de la memoria
    * @param {string} model - Nombre del modelo a descargar
    * @returns {Promise<Object>} Confirmación de descarga

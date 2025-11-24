@@ -99,6 +99,65 @@ def generate_with_image(
     return _call_ollama(payload)
 
 
+def generate_with_image_stream(
+    model: str, 
+    prompt: str, 
+    image_bytes: Optional[bytes] = None
+):
+    """
+    Genera una respuesta desde Ollama con streaming, opcionalmente incluyendo una imagen.
+    
+    Args:
+        model: Nombre del modelo Ollama a usar
+        prompt: Texto del prompt para la generación
+        image_bytes: Datos opcionales de imagen como bytes
+        
+    Yields:
+        Chunks de texto generados por el modelo
+    """
+    messages = [{"role": "user", "content": prompt}]
+    
+    if image_bytes:
+        try:
+            img_b64 = base64.b64encode(image_bytes).decode("utf-8")
+            messages[0]["images"] = [img_b64]
+            logger.info(f"Imagen codificada, tamaño: {len(image_bytes)} bytes")
+        except Exception as e:
+            logger.error(f"Fallo al codificar imagen: {str(e)}")
+            raise ValueError(f"Error codificando imagen: {str(e)}")
+
+    payload = {
+        "model": model,
+        "messages": messages,
+        "stream": True
+    }
+    
+    try:
+        logger.info(f"Iniciando streaming con modelo: {model}")
+        resp = requests.post(OLLAMA_CHAT_URL, json=payload, stream=True, timeout=OLLAMA_TIMEOUT)
+        resp.raise_for_status()
+        
+        for line in resp.iter_lines():
+            if line:
+                try:
+                    import json
+                    chunk = json.loads(line)
+                    if "message" in chunk and "content" in chunk["message"]:
+                        content = chunk["message"]["content"]
+                        if content:
+                            yield content
+                except json.JSONDecodeError:
+                    logger.warning(f"Could not decode line: {line}")
+                    continue
+                    
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error en streaming de Ollama: {str(e)}")
+        raise
+    except Exception as e:
+        logger.exception("Error inesperado en streaming")
+        raise
+
+
 def unload_model(model: str) -> Dict[str, Any]:
     """
     Descarga un modelo de memoria para liberar recursos.

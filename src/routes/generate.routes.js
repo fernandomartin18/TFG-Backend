@@ -27,4 +27,11 @@ const upload = multer({
  */
 router.post('/', upload.single('image'), generateController.generate.bind(generateController));
 
+/**
+ * @route   POST /api/generate/stream
+ * @desc    Genera código con streaming a partir de un prompt y opcionalmente una imagen
+ * @access  Public
+ */
+router.post('/stream', upload.single('image'), generateController.generateStream.bind(generateController));
+
 export default router;

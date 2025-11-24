@@ -322,7 +322,7 @@ curl http://localhost:3000/api/models
 
 #### 🟢 POST /api/generate
 
-**Descripción:** Genera código a partir de texto o imagen
+**Descripción:** Genera código a partir de texto o imagen (respuesta completa)
 
 **Request con texto:**
 ```bash
@@ -346,6 +346,34 @@ curl -X POST http://localhost:3000/api/generate \
   "content": "public class User { ... }"
 }
 ```
+
+#### 🟢 POST /api/generate/stream
+
+**Descripción:** Genera código con streaming (respuesta progresiva en tiempo real)
+
+**Request:**
+```bash
+curl -X POST http://localhost:3000/api/generate/stream \
+  -F "model=qwen2.5-coder:14b" \
+  -F "prompt=Crea un hola mundo en python"
+```
+
+**Response:** Server-Sent Events (SSE)
+```
+data: def
+data:  hello
+data: _world
+data: ():
+data: \n
+data:     print
+data: ("
+data: Hello
+data:  World
+data: ")
+data: [DONE]
+```
+
+**Nota:** El streaming permite mostrar la respuesta en tiempo real a medida que el modelo la genera, mejorando la experiencia de usuario para respuestas largas.
 
 #### 🟢 POST /api/models/unload
 
@@ -445,7 +473,7 @@ curl -X POST "http://localhost:8001/models/unload" \
 
 ### 🔵 POST /generate/ - Generar Código
 
-**Descripción:** Genera código a partir de un prompt y opcionalmente una imagen (diagrama UML).
+**Descripción:** Genera código a partir de un prompt y opcionalmente una imagen (respuesta completa).
 
 **Parámetros:**
 - `model` (string, requerido): Nombre del modelo en Ollama
@@ -472,6 +500,42 @@ curl -X POST "http://localhost:8001/generate/" \
 {
   "result": "class UserManager:\n    def __init__(self):\n        self.users = []\n    \n    def create_user(self, name, email):\n        ..."
 }
+```
+
+**Errores posibles:**
+- `400` - Imagen demasiado grande (>10MB) o parámetros inválidos
+- `500` - Error en la generación o modelo no disponible
+- `503` - Ollama no está corriendo
+
+---
+
+### 🔵 POST /generate/stream - Generar Código con Streaming
+
+**Descripción:** Genera código con streaming usando Server-Sent Events (SSE), mostrando la respuesta en tiempo real a medida que se genera.
+
+**Parámetros:**
+- `model` (string, requerido): Nombre del modelo en Ollama
+- `prompt` (string, requerido): Descripción de lo que quieres generar
+- `image` (file, opcional): Imagen del diagrama UML (máx 10MB)
+
+**Ejemplo:**
+```bash
+curl -X POST "http://localhost:8001/generate/stream" \
+  -F "model=qwen3-vl:8b" \
+  -F "prompt=Crea una clase Usuario en Python"
+```
+
+**Respuesta esperada (SSE):**
+```
+data: class
+data:  User
+data: Manager
+data: :
+data: \n
+data:     def
+data:  __init__
+data: ...
+data: [DONE]
 ```
 
 **Errores posibles:**

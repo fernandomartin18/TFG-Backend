@@ -1,6 +1,7 @@
 from typing import Optional
 from fastapi import APIRouter, Form, UploadFile, File, HTTPException
-from app.services.ollama_service import generate_with_image
+from fastapi.responses import StreamingResponse
+from app.services.ollama_service import generate_with_image, generate_with_image_stream
 from app.schemas.generate_request import GenerateResponse
 from app.core.logger import logger
 
@@ -111,3 +112,70 @@ def _extract_content(ollama_resp: dict) -> str:
     # Fallback: stringify whole response
     logger.warning(f"Unknown response format: {ollama_resp.keys()}")
     return str(ollama_resp)
+
+
+@router.post("/stream")
+async def generate_stream(
+    model: str = Form(..., description="Nombre del modelo en Ollama"),
+    prompt: str = Form(..., description="Texto del prompt"),
+    image: Optional[UploadFile] = File(None, description="Archivo de imagen opcional")
+):
+    """
+    Genera texto en streaming, mostrando la respuesta a medida que se genera.
+    
+    Args:
+        model: Nombre del modelo en Ollama
+        prompt: Texto del prompt para la generación
+        image: Archivo de imagen opcional para análisis multimodal
+        
+    Returns:
+        StreamingResponse con chunks de texto
+    """
+    try:
+        image_bytes = None
+        if image:
+            logger.info(f"Processing image: {image.filename}, content-type: {image.content_type}")
+            image_bytes = await image.read()
+            
+            # Validate image size (max 10MB)
+            if len(image_bytes) > 10 * 1024 * 1024:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Imagen demasiado grande. Máximo 10MB"
+                )
+        
+        logger.info(f"Starting streaming with model: {model}, prompt length: {len(prompt)}")
+        
+        def event_generator():
+            try:
+                for chunk in generate_with_image_stream(
+                    model=model, 
+                    prompt=prompt, 
+                    image_bytes=image_bytes
+                ):
+                    yield f"data: {chunk}\n\n"
+                yield "data: [DONE]\n\n"
+            except Exception as e:
+                logger.error(f"Error in stream generator: {str(e)}")
+                yield f"data: [ERROR] {str(e)}\n\n"
+        
+        return StreamingResponse(
+            event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except ValueError as e:
+        logger.error(f"Validation error: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.exception("Error en /generate/stream")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error generando respuesta en streaming: {str(e)}"
+        )
