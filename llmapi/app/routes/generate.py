@@ -148,12 +148,14 @@ async def generate_stream(
         
         def event_generator():
             try:
+                import json
                 for chunk in generate_with_image_stream(
                     model=model, 
                     prompt=prompt, 
                     image_bytes=image_bytes
                 ):
-                    yield f"data: {chunk}\n\n"
+                    # Codificar en JSON para preservar caracteres especiales y saltos de línea
+                    yield f"data: {json.dumps(chunk)}\n\n"
                 yield "data: [DONE]\n\n"
             except Exception as e:
                 logger.error(f"Error in stream generator: {str(e)}")
