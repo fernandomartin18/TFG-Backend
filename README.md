@@ -115,8 +115,9 @@ Punto de entrada para el frontend. Se encarga de:
 Backend especializado en IA. Se encarga de:
 - Comunicación con **Ollama** (modelos locales de IA)
 - Procesamiento de imágenes y conversión a base64
-- Generación de código híbrido
+- Generación de código híbrido con contexto conversacional
 - Gestión de modelos y timeouts configurables
+- Mantenimiento de historial de mensajes para coherencia en la conversación
 
 ---
 
@@ -349,13 +350,27 @@ curl -X POST http://localhost:3000/api/generate \
 
 #### 🟢 POST /api/generate/stream
 
-**Descripción:** Genera código con streaming (respuesta progresiva en tiempo real)
+**Descripción:** Genera código con streaming (respuesta progresiva en tiempo real). Soporta contexto de conversación para mantener coherencia entre mensajes.
 
-**Request:**
+**Parámetros:**
+- `model` (string, requerido): Nombre del modelo
+- `prompt` (string, requerido): Texto del prompt
+- `messages` (string, opcional): Historial de mensajes en formato JSON para mantener contexto
+- `image` (file, opcional): Imagen (máx 10MB)
+
+**Request básico:**
 ```bash
 curl -X POST http://localhost:3000/api/generate/stream \
   -F "model=qwen2.5-coder:14b" \
   -F "prompt=Crea un hola mundo en python"
+```
+
+**Request con contexto:**
+```bash
+curl -X POST http://localhost:3000/api/generate/stream \
+  -F "model=qwen2.5-coder:14b" \
+  -F "prompt=Ahora hazlo en Java" \
+  -F 'messages=[{"role":"user","content":"Crea un hola mundo en python"},{"role":"assistant","content":"def hello_world()..."}]'
 ```
 
 **Response:** Server-Sent Events (SSE)
@@ -511,18 +526,27 @@ curl -X POST "http://localhost:8001/generate/" \
 
 ### 🔵 POST /generate/stream - Generar Código con Streaming
 
-**Descripción:** Genera código con streaming usando Server-Sent Events (SSE), mostrando la respuesta en tiempo real a medida que se genera.
+**Descripción:** Genera código con streaming usando Server-Sent Events (SSE), mostrando la respuesta en tiempo real a medida que se genera. Soporta contexto de conversación para recordar mensajes anteriores.
 
 **Parámetros:**
 - `model` (string, requerido): Nombre del modelo en Ollama
 - `prompt` (string, requerido): Descripción de lo que quieres generar
+- `messages` (string, opcional): Historial de mensajes en formato JSON para contexto conversacional
 - `image` (file, opcional): Imagen del diagrama UML (máx 10MB)
 
-**Ejemplo:**
+**Ejemplo básico:**
 ```bash
 curl -X POST "http://localhost:8001/generate/stream" \
   -F "model=qwen3-vl:8b" \
   -F "prompt=Crea una clase Usuario en Python"
+```
+
+**Ejemplo con contexto:**
+```bash
+curl -X POST "http://localhost:8001/generate/stream" \
+  -F "model=qwen2.5-coder:14b" \
+  -F "prompt=Ahora añade un método para validar el email" \
+  -F 'messages=[{"role":"user","content":"Crea una clase Usuario"},{"role":"assistant","content":"class User:..."}]'
 ```
 
 **Respuesta esperada (SSE):**

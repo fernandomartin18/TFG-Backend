@@ -66,7 +66,7 @@ export class GenerateController {
    */
   async generateStream(req, res) {
     try {
-      const { model, prompt } = req.body;
+      const { model, prompt, messages } = req.body;
       const image = req.file;
 
       // Validación de campos requeridos
@@ -74,6 +74,16 @@ export class GenerateController {
         return res.status(400).json({
           error: 'Los campos "model" y "prompt" son requeridos',
         });
+      }
+
+      // Parsear el historial de mensajes si viene como string
+      let messageHistory = [];
+      if (messages) {
+        try {
+          messageHistory = typeof messages === 'string' ? JSON.parse(messages) : messages;
+        } catch (e) {
+          logger.error('Error parsing messages:', e);
+        }
       }
 
       // Validación de imagen si se proporciona
@@ -105,7 +115,8 @@ export class GenerateController {
         model,
         prompt,
         image?.buffer,
-        image?.mimetype
+        image?.mimetype,
+        messageHistory
       );
 
       // Pipe del stream de FastAPI al cliente

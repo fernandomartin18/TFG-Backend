@@ -118,6 +118,7 @@ def _extract_content(ollama_resp: dict) -> str:
 async def generate_stream(
     model: str = Form(..., description="Nombre del modelo en Ollama"),
     prompt: str = Form(..., description="Texto del prompt"),
+    messages: Optional[str] = Form(None, description="Historial de mensajes en formato JSON"),
     image: Optional[UploadFile] = File(None, description="Archivo de imagen opcional")
 ):
     """
@@ -146,13 +147,24 @@ async def generate_stream(
         
         logger.info(f"Starting streaming with model: {model}, prompt length: {len(prompt)}")
         
+        # Parsear el historial de mensajes si está presente
+        message_history = []
+        if messages:
+            try:
+                import json
+                message_history = json.loads(messages)
+                logger.info(f"Received message history with {len(message_history)} messages")
+            except json.JSONDecodeError as e:
+                logger.error(f"Error parsing message history: {str(e)}")
+        
         def event_generator():
             try:
                 import json
                 for chunk in generate_with_image_stream(
                     model=model, 
                     prompt=prompt, 
-                    image_bytes=image_bytes
+                    image_bytes=image_bytes,
+                    message_history=message_history
                 ):
                     # Codificar en JSON para preservar caracteres especiales y saltos de línea
                     yield f"data: {json.dumps(chunk)}\n\n"

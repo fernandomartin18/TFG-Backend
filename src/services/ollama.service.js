@@ -77,22 +77,28 @@ class OllamaService {
    * @param {string} prompt - Prompt para la generación
    * @param {Buffer} imageBuffer - Buffer de la imagen (opcional)
    * @param {string} imageMimeType - Tipo MIME de la imagen (opcional)
+   * @param {Array} messageHistory - Historial de mensajes para contexto (opcional)
    * @returns {Promise<Stream>} Stream de respuesta
    */
-  async generateCodeStream(model, prompt, imageBuffer = null, imageMimeType = null) {
+  async generateCodeStream(model, prompt, imageBuffer = null, imageMimeType = null, messageHistory = []) {
     try {
       const formData = new FormData();
       formData.append('model', model);
       formData.append('prompt', prompt);
+      
+      // Agregar historial de mensajes si existe
+      if (messageHistory && messageHistory.length > 0) {
+        formData.append('messages', JSON.stringify(messageHistory));
+      }
 
       if (imageBuffer && imageMimeType) {
         formData.append('image', imageBuffer, {
           filename: 'image.png',
           contentType: imageMimeType,
         });
-        logger.info(`Starting streaming generation with model: ${model}, prompt length: ${prompt.length}, image size: ${imageBuffer.length} bytes`);
+        logger.info(`Starting streaming generation with model: ${model}, prompt length: ${prompt.length}, image size: ${imageBuffer.length} bytes, history: ${messageHistory.length} messages`);
       } else {
-        logger.info(`Starting streaming generation with model: ${model}, prompt length: ${prompt.length}`);
+        logger.info(`Starting streaming generation with model: ${model}, prompt length: ${prompt.length}, history: ${messageHistory.length} messages`);
       }
 
       const response = await axios.post(`${this.baseURL}/generate/stream`, formData, {

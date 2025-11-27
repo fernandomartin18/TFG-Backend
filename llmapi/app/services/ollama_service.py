@@ -102,7 +102,8 @@ def generate_with_image(
 def generate_with_image_stream(
     model: str, 
     prompt: str, 
-    image_bytes: Optional[bytes] = None
+    image_bytes: Optional[bytes] = None,
+    message_history: Optional[list] = None
 ):
     """
     Genera una respuesta desde Ollama con streaming, opcionalmente incluyendo una imagen.
@@ -111,16 +112,24 @@ def generate_with_image_stream(
         model: Nombre del modelo Ollama a usar
         prompt: Texto del prompt para la generación
         image_bytes: Datos opcionales de imagen como bytes
+        message_history: Historial de mensajes previos para contexto
         
     Yields:
         Chunks de texto generados por el modelo
     """
-    messages = [{"role": "user", "content": prompt}]
+    # Si hay historial de mensajes, usarlo; si no, crear uno nuevo solo con el mensaje actual
+    if message_history and len(message_history) > 0:
+        messages = message_history
+        logger.info(f"Using message history with {len(messages)} messages")
+    else:
+        messages = [{"role": "user", "content": prompt}]
     
     if image_bytes:
         try:
             img_b64 = base64.b64encode(image_bytes).decode("utf-8")
-            messages[0]["images"] = [img_b64]
+            # Agregar la imagen al último mensaje del usuario
+            if messages:
+                messages[-1]["images"] = [img_b64]
             logger.info(f"Imagen codificada, tamaño: {len(image_bytes)} bytes")
         except Exception as e:
             logger.error(f"Fallo al codificar imagen: {str(e)}")
