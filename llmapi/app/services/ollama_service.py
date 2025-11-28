@@ -1,6 +1,6 @@
 import requests
 import base64
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from app.core.config import (
     OLLAMA_CHAT_URL, 
     OLLAMA_TAGS_URL, 
@@ -66,29 +66,33 @@ def list_models() -> Dict[str, Any]:
 def generate_with_image(
     model: str, 
     prompt: str, 
-    image_bytes: Optional[bytes] = None
+    image_bytes_list: Optional[List[bytes]] = None
 ) -> Dict[str, Any]:
     """
-    Genera una respuesta desde Ollama, opcionalmente incluyendo una imagen.
+    Genera una respuesta desde Ollama, opcionalmente incluyendo múltiples imágenes.
     
     Args:
         model: Nombre del modelo Ollama a usar
         prompt: Texto del prompt para la generación
-        image_bytes: Datos opcionales de imagen como bytes
+        image_bytes_list: Lista opcional de datos de imagen como bytes
         
     Returns:
         Diccionario conteniendo la respuesta de generación
     """
     messages = [{"role": "user", "content": prompt}]
     
-    if image_bytes:
+    if image_bytes_list and len(image_bytes_list) > 0:
         try:
-            img_b64 = base64.b64encode(image_bytes).decode("utf-8")
-            messages[0]["images"] = [img_b64]
-            logger.info(f"Imagen codificada, tamaño: {len(image_bytes)} bytes")
+            images_b64 = []
+            for image_bytes in image_bytes_list:
+                img_b64 = base64.b64encode(image_bytes).decode("utf-8")
+                images_b64.append(img_b64)
+            
+            messages[0]["images"] = images_b64
+            logger.info(f"{len(image_bytes_list)} imágenes codificadas")
         except Exception as e:
-            logger.error(f"Fallo al codificar imagen: {str(e)}")
-            raise ValueError(f"Error codificando imagen: {str(e)}")
+            logger.error(f"Fallo al codificar imágenes: {str(e)}")
+            raise ValueError(f"Error codificando imágenes: {str(e)}")
 
     payload = {
         "model": model,
@@ -102,16 +106,16 @@ def generate_with_image(
 def generate_with_image_stream(
     model: str, 
     prompt: str, 
-    image_bytes: Optional[bytes] = None,
+    image_bytes_list: Optional[List[bytes]] = None,
     message_history: Optional[list] = None
 ):
     """
-    Genera una respuesta desde Ollama con streaming, opcionalmente incluyendo una imagen.
+    Genera una respuesta desde Ollama con streaming, opcionalmente incluyendo múltiples imágenes.
     
     Args:
         model: Nombre del modelo Ollama a usar
         prompt: Texto del prompt para la generación
-        image_bytes: Datos opcionales de imagen como bytes
+        image_bytes_list: Lista opcional de datos de imagen como bytes
         message_history: Historial de mensajes previos para contexto
         
     Yields:
@@ -124,16 +128,20 @@ def generate_with_image_stream(
     else:
         messages = [{"role": "user", "content": prompt}]
     
-    if image_bytes:
+    if image_bytes_list and len(image_bytes_list) > 0:
         try:
-            img_b64 = base64.b64encode(image_bytes).decode("utf-8")
-            # Agregar la imagen al último mensaje del usuario
+            images_b64 = []
+            for image_bytes in image_bytes_list:
+                img_b64 = base64.b64encode(image_bytes).decode("utf-8")
+                images_b64.append(img_b64)
+            
+            # Agregar las imágenes al último mensaje del usuario
             if messages:
-                messages[-1]["images"] = [img_b64]
-            logger.info(f"Imagen codificada, tamaño: {len(image_bytes)} bytes")
+                messages[-1]["images"] = images_b64
+            logger.info(f"{len(image_bytes_list)} imágenes codificadas")
         except Exception as e:
-            logger.error(f"Fallo al codificar imagen: {str(e)}")
-            raise ValueError(f"Error codificando imagen: {str(e)}")
+            logger.error(f"Fallo al codificar imágenes: {str(e)}")
+            raise ValueError(f"Error codificando imágenes: {str(e)}")
 
     payload = {
         "model": model,

@@ -323,7 +323,7 @@ curl http://localhost:3000/api/models
 
 #### 🟢 POST /api/generate
 
-**Descripción:** Genera código a partir de texto o imagen (respuesta completa)
+**Descripción:** Genera código a partir de texto o imágenes. Soporta hasta 5 imágenes simultáneas.
 
 **Request con texto:**
 ```bash
@@ -332,12 +332,14 @@ curl -X POST http://localhost:3000/api/generate \
   -F "prompt=Crea un hola mundo en python"
 ```
 
-**Request con imagen:**
+**Request con múltiples imágenes:**
 ```bash
 curl -X POST http://localhost:3000/api/generate \
   -F "model=qwen3-vl:8b" \
-  -F "prompt=Generate the PlantUML code from this diagram" \
-  -F "image=@./iterator.png"
+  -F "prompt=Analiza estos diagramas y genera el código" \
+  -F "images=@./diagram1.png" \
+  -F "images=@./diagram2.png" \
+  -F "images=@./diagram3.png"
 ```
 
 **Response:**
@@ -350,13 +352,13 @@ curl -X POST http://localhost:3000/api/generate \
 
 #### 🟢 POST /api/generate/stream
 
-**Descripción:** Genera código con streaming (respuesta progresiva en tiempo real). Soporta contexto de conversación para mantener coherencia entre mensajes.
+**Descripción:** Genera código con streaming (respuesta progresiva en tiempo real). Soporta contexto de conversación para mantener coherencia entre mensajes y hasta 5 imágenes simultáneas.
 
 **Parámetros:**
 - `model` (string, requerido): Nombre del modelo
 - `prompt` (string, requerido): Texto del prompt
 - `messages` (string, opcional): Historial de mensajes en formato JSON para mantener contexto
-- `image` (file, opcional): Imagen (máx 10MB)
+- `images` (files, opcional): Hasta 5 imágenes (máx 10MB cada una)
 
 **Request básico:**
 ```bash
@@ -488,12 +490,12 @@ curl -X POST "http://localhost:8001/models/unload" \
 
 ### 🔵 POST /generate/ - Generar Código
 
-**Descripción:** Genera código a partir de un prompt y opcionalmente una imagen (respuesta completa).
+**Descripción:** Genera código a partir de un prompt y opcionalmente hasta 5 imágenes.
 
 **Parámetros:**
 - `model` (string, requerido): Nombre del modelo en Ollama
 - `prompt` (string, requerido): Descripción de lo que quieres generar
-- `image` (file, opcional): Imagen del diagrama UML (máx 10MB)
+- `images` (files, opcional): Hasta 5 imágenes del diagrama UML (máx 10MB cada una)
 
 **Ejemplo sin imagen:**
 ```bash
@@ -502,12 +504,13 @@ curl -X POST "http://localhost:8001/generate/" \
   -F "prompt=Crea una hola mundo en python"
 ```
 
-**Ejemplo con imagen:**
+**Ejemplo con múltiples imágenes:**
 ```bash
 curl -X POST "http://localhost:8001/generate/" \
   -F "model=qwen3-vl:8b" \
-  -F "prompt=Analiza el diagrama UML y devuelve únicamente el código PlantUML correspondiente" \
-  -F "image=@/ruta/a/diagrama.png"
+  -F "prompt=Analiza los diagramas UML y genera el código correspondiente" \
+  -F "images=@/ruta/a/diagrama1.png" \
+  -F "images=@/ruta/a/diagrama2.png"
 ```
 
 **Respuesta esperada:**
@@ -518,7 +521,7 @@ curl -X POST "http://localhost:8001/generate/" \
 ```
 
 **Errores posibles:**
-- `400` - Imagen demasiado grande (>10MB) o parámetros inválidos
+- `400` - Imagen demasiado grande (>10MB), más de 5 imágenes, o parámetros inválidos
 - `500` - Error en la generación o modelo no disponible
 - `503` - Ollama no está corriendo
 
@@ -526,13 +529,13 @@ curl -X POST "http://localhost:8001/generate/" \
 
 ### 🔵 POST /generate/stream - Generar Código con Streaming
 
-**Descripción:** Genera código con streaming usando Server-Sent Events (SSE), mostrando la respuesta en tiempo real a medida que se genera. Soporta contexto de conversación para recordar mensajes anteriores.
+**Descripción:** Genera código con streaming usando Server-Sent Events (SSE), mostrando la respuesta en tiempo real a medida que se genera. Soporta contexto de conversación para recordar mensajes anteriores y hasta 5 imágenes simultáneas.
 
 **Parámetros:**
 - `model` (string, requerido): Nombre del modelo en Ollama
 - `prompt` (string, requerido): Descripción de lo que quieres generar
 - `messages` (string, opcional): Historial de mensajes en formato JSON para contexto conversacional
-- `image` (file, opcional): Imagen del diagrama UML (máx 10MB)
+- `images` (files, opcional): Hasta 5 imágenes del diagrama UML (máx 10MB cada una)
 
 **Ejemplo básico:**
 ```bash
@@ -563,7 +566,7 @@ data: [DONE]
 ```
 
 **Errores posibles:**
-- `400` - Imagen demasiado grande (>10MB) o parámetros inválidos
+- `400` - Imagen demasiado grande (>10MB), más de 5 imágenes, o parámetros inválidos
 - `500` - Error en la generación o modelo no disponible
 - `503` - Ollama no está corriendo
 

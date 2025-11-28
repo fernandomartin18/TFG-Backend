@@ -22,16 +22,16 @@ const upload = multer({
 
 /**
  * @route   POST /api/generate
- * @desc    Genera código a partir de un prompt y opcionalmente una imagen
+ * @desc    Genera código a partir de un prompt y opcionalmente hasta 5 imágenes
  * @access  Public
  */
-router.post('/', upload.single('image'), generateController.generate.bind(generateController));
+router.post('/', upload.array('images', 5), generateController.generate.bind(generateController));
 
 /**
  * @route   POST /api/generate/stream
- * @desc    Genera código con streaming a partir de un prompt y opcionalmente una imagen
+ * @desc    Genera código con streaming a partir de un prompt y opcionalmente hasta 5 imágenes
  * @access  Public
  */
-router.post('/stream', upload.single('image'), generateController.generateStream.bind(generateController));
+router.post('/stream', upload.array('images', 5), generateController.generateStream.bind(generateController));
 
 export default router;

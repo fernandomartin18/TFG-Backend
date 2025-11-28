@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, Form, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
 from app.services.ollama_service import generate_with_image, generate_with_image_stream
@@ -119,7 +119,7 @@ async def generate_stream(
     model: str = Form(..., description="Nombre del modelo en Ollama"),
     prompt: str = Form(..., description="Texto del prompt"),
     messages: Optional[str] = Form(None, description="Historial de mensajes en formato JSON"),
-    image: Optional[UploadFile] = File(None, description="Archivo de imagen opcional")
+    images: Optional[List[UploadFile]] = File(None, description="Archivos de imagen opcionales (hasta 5)")
 ):
     """
     Genera texto en streaming, mostrando la respuesta a medida que se genera.
@@ -127,25 +127,35 @@ async def generate_stream(
     Args:
         model: Nombre del modelo en Ollama
         prompt: Texto del prompt para la generación
-        image: Archivo de imagen opcional para análisis multimodal
+        images: Lista de archivos de imagen opcionales para análisis multimodal
         
     Returns:
         StreamingResponse con chunks de texto
     """
     try:
-        image_bytes = None
-        if image:
-            logger.info(f"Processing image: {image.filename}, content-type: {image.content_type}")
-            image_bytes = await image.read()
-            
-            # Validate image size (max 10MB)
-            if len(image_bytes) > 10 * 1024 * 1024:
+        image_bytes_list = []
+        if images:
+            # Validar límite de imágenes
+            if len(images) > 5:
                 raise HTTPException(
-                    status_code=400, 
-                    detail="Imagen demasiado grande. Máximo 10MB"
+                    status_code=400,
+                    detail="Máximo 5 imágenes permitidas"
                 )
+            
+            for image in images:
+                logger.info(f"Processing image: {image.filename}, content-type: {image.content_type}")
+                image_bytes = await image.read()
+                
+                # Validate image size (max 10MB)
+                if len(image_bytes) > 10 * 1024 * 1024:
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f"Imagen {image.filename} demasiado grande. Máximo 10MB"
+                    )
+                
+                image_bytes_list.append(image_bytes)
         
-        logger.info(f"Starting streaming with model: {model}, prompt length: {len(prompt)}")
+        logger.info(f"Starting streaming with model: {model}, prompt length: {len(prompt)}, {len(image_bytes_list)} images")
         
         # Parsear el historial de mensajes si está presente
         message_history = []
@@ -163,7 +173,7 @@ async def generate_stream(
                 for chunk in generate_with_image_stream(
                     model=model, 
                     prompt=prompt, 
-                    image_bytes=image_bytes,
+                    image_bytes_list=image_bytes_list,
                     message_history=message_history
                 ):
                     # Codificar en JSON para preservar caracteres especiales y saltos de línea

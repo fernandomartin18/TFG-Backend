@@ -13,7 +13,7 @@ export class GenerateController {
   async generate(req, res) {
     try {
       const { model, prompt } = req.body;
-      const image = req.file;
+      const images = req.files || [];
 
       // Validación de campos requeridos
       if (!model || !prompt) {
@@ -22,31 +22,40 @@ export class GenerateController {
         });
       }
 
-      // Validación de imagen si se proporciona
-      if (image) {
-        // Verificar tipo MIME
-        if (!config.upload.allowedMimeTypes.includes(image.mimetype)) {
+      // Validación de imágenes si se proporcionan
+      if (images.length > 0) {
+        // Verificar límite de imágenes
+        if (images.length > 5) {
           return res.status(400).json({
-            error: `Tipo de imagen no permitido. Tipos aceptados: ${config.upload.allowedMimeTypes.join(', ')}`,
+            error: 'Máximo 5 imágenes permitidas',
           });
         }
 
-        // Verificar tamaño
-        if (image.size > config.upload.maxSize) {
-          return res.status(400).json({
-            error: `Imagen demasiado grande. Tamaño máximo: ${config.upload.maxSize / 1024 / 1024}MB`,
-          });
+        // Validar cada imagen
+        for (const image of images) {
+          // Verificar tipo MIME
+          if (!config.upload.allowedMimeTypes.includes(image.mimetype)) {
+            return res.status(400).json({
+              error: `Tipo de imagen no permitido: ${image.mimetype}. Tipos aceptados: ${config.upload.allowedMimeTypes.join(', ')}`,
+            });
+          }
+
+          // Verificar tamaño
+          if (image.size > config.upload.maxSize) {
+            return res.status(400).json({
+              error: `Imagen demasiado grande: ${image.originalname}. Tamaño máximo: ${config.upload.maxSize / 1024 / 1024}MB`,
+            });
+          }
         }
 
-        logger.info(`Generating with image: ${image.originalname}, size: ${image.size} bytes, type: ${image.mimetype}`);
+        logger.info(`Generating with ${images.length} images`);
       }
 
       // Llamar al servicio
       const result = await ollamaService.generateCode(
         model,
         prompt,
-        image?.buffer,
-        image?.mimetype
+        images
       );
 
       res.json(result);
@@ -67,7 +76,7 @@ export class GenerateController {
   async generateStream(req, res) {
     try {
       const { model, prompt, messages } = req.body;
-      const image = req.file;
+      const images = req.files || [];
 
       // Validación de campos requeridos
       if (!model || !prompt) {
@@ -86,23 +95,33 @@ export class GenerateController {
         }
       }
 
-      // Validación de imagen si se proporciona
-      if (image) {
-        // Verificar tipo MIME
-        if (!config.upload.allowedMimeTypes.includes(image.mimetype)) {
+      // Validación de imágenes si se proporcionan
+      if (images.length > 0) {
+        // Verificar límite de imágenes
+        if (images.length > 5) {
           return res.status(400).json({
-            error: `Tipo de imagen no permitido. Tipos aceptados: ${config.upload.allowedMimeTypes.join(', ')}`,
+            error: 'Máximo 5 imágenes permitidas',
           });
         }
 
-        // Verificar tamaño
-        if (image.size > config.upload.maxSize) {
-          return res.status(400).json({
-            error: `Imagen demasiado grande. Tamaño máximo: ${config.upload.maxSize / 1024 / 1024}MB`,
-          });
+        // Validar cada imagen
+        for (const image of images) {
+          // Verificar tipo MIME
+          if (!config.upload.allowedMimeTypes.includes(image.mimetype)) {
+            return res.status(400).json({
+              error: `Tipo de imagen no permitido: ${image.mimetype}. Tipos aceptados: ${config.upload.allowedMimeTypes.join(', ')}`,
+            });
+          }
+
+          // Verificar tamaño
+          if (image.size > config.upload.maxSize) {
+            return res.status(400).json({
+              error: `Imagen demasiado grande: ${image.originalname}. Tamaño máximo: ${config.upload.maxSize / 1024 / 1024}MB`,
+            });
+          }
         }
 
-        logger.info(`Starting streaming with image: ${image.originalname}, size: ${image.size} bytes, type: ${image.mimetype}`);
+        logger.info(`Starting streaming with ${images.length} images`);
       }
 
       // Configurar headers para SSE
@@ -114,8 +133,7 @@ export class GenerateController {
       const stream = await ollamaService.generateCodeStream(
         model,
         prompt,
-        image?.buffer,
-        image?.mimetype,
+        images,
         messageHistory
       );
 
