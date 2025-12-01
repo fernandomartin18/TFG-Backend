@@ -114,9 +114,12 @@ Punto de entrada para el frontend. Se encarga de:
 ### 🔵 FastAPI (Puerto 8001)
 Backend especializado en IA. Se encarga de:
 - Comunicación con **Ollama** (modelos locales de IA)
+- **Generación en dos pasos**: Extracción de PlantUML → Generación de código
 - Procesamiento de imágenes y conversión a base64
+- **Validación de diagramas UML** en imágenes
 - Generación de código híbrido con contexto conversacional
 - Gestión de modelos y timeouts configurables
+- **Streaming con eventos de control** para mostrar progreso paso a paso
 - Mantenimiento de historial de mensajes para coherencia en la conversación
 
 ---
@@ -354,11 +357,19 @@ curl -X POST http://localhost:3000/api/generate \
 
 **Descripción:** Genera código con streaming (respuesta progresiva en tiempo real). Soporta contexto de conversación para mantener coherencia entre mensajes y hasta 5 imágenes simultáneas.
 
+**Modo Automático con Imágenes:**
+Cuando se usa el modelo automático (`Auto`) con imágenes, el sistema ejecuta un proceso de dos pasos:
+1. **Extracción de PlantUML** usando `qwen3-vl:8b` - Convierte diagramas UML en código PlantUML
+2. **Generación de código** usando `qwen2.5-coder:14b` - Genera código a partir del PlantUML
+
+Si todas las imágenes se detectan como no-UML, el proceso se detiene y retorna un mensaje de error.
+
 **Parámetros:**
-- `model` (string, requerido): Nombre del modelo
+- `model` (string, requerido): Nombre del modelo (usa "Auto" para activar el modo de dos pasos)
 - `prompt` (string, requerido): Texto del prompt
 - `messages` (string, opcional): Historial de mensajes en formato JSON para mantener contexto
 - `images` (files, opcional): Hasta 5 imágenes (máx 10MB cada una)
+- `autoMode` (string, opcional): "true" para activar el proceso de dos pasos
 
 **Request básico:**
 ```bash
@@ -375,7 +386,7 @@ curl -X POST http://localhost:3000/api/generate/stream \
   -F 'messages=[{"role":"user","content":"Crea un hola mundo en python"},{"role":"assistant","content":"def hello_world()..."}]'
 ```
 
-**Response:** Server-Sent Events (SSE)
+**Response estándar:** Server-Sent Events (SSE)
 ```
 data: def
 data:  hello
@@ -390,7 +401,31 @@ data: ")
 data: [DONE]
 ```
 
-**Nota:** El streaming permite mostrar la respuesta en tiempo real a medida que el modelo la genera, mejorando la experiencia de usuario para respuestas largas.
+**Response en modo automático con imágenes:** Server-Sent Events con eventos de control
+```
+data: "[STEP1_START]"
+data: "```plantuml"
+data: "\n@startuml\n"
+data: "class User {\n"
+data: "  +name: String\n"
+data: "}\n"
+data: "@enduml\n"
+data: "```"
+data: "[STEP1_END]"
+data: "[STEP2_START]"
+data: "class User:\n"
+data: "    def __init__(self, name):\n"
+data: "        self.name = name\n"
+data: [DONE]
+```
+
+**Eventos de control:**
+- `[STEP1_START]`: Inicia extracción de PlantUML (frontend muestra "Generando PlantUML")
+- `[STEP1_END]`: Finaliza extracción de PlantUML
+- `[STEP2_START]`: Inicia generación de código final
+- `[DONE]`: Proceso completado
+
+**Nota:** El streaming permite mostrar la respuesta en tiempo real a medida que el modelo la genera, mejorando la experiencia de usuario para respuestas largas. En modo automático, el usuario puede ver el PlantUML intermedio de forma expandible.
 
 #### 🟢 POST /api/models/unload
 
@@ -531,11 +566,17 @@ curl -X POST "http://localhost:8001/generate/" \
 
 **Descripción:** Genera código con streaming usando Server-Sent Events (SSE), mostrando la respuesta en tiempo real a medida que se genera. Soporta contexto de conversación para recordar mensajes anteriores y hasta 5 imágenes simultáneas.
 
+**Modo Automático (auto_mode=true con imágenes):**
+- **Paso 1**: Extrae PlantUML usando `qwen3-vl:8b` y envía eventos `[STEP1_START]`/`[STEP1_END]`
+- **Validación**: Si todas las imágenes son "No diagram", retorna error sin continuar al paso 2
+- **Paso 2**: Genera código con `qwen2.5-coder:14b` usando el PlantUML extraído
+
 **Parámetros:**
 - `model` (string, requerido): Nombre del modelo en Ollama
 - `prompt` (string, requerido): Descripción de lo que quieres generar
 - `messages` (string, opcional): Historial de mensajes en formato JSON para contexto conversacional
 - `images` (files, opcional): Hasta 5 imágenes del diagrama UML (máx 10MB cada una)
+- `auto_mode` (string, opcional): "true" para activar generación en dos pasos
 
 **Ejemplo básico:**
 ```bash
@@ -761,6 +802,23 @@ ollama run gemma3:27b "test"
 
 # Ahora el modelo está en memoria y responderá más rápido
 ```
+
+---
+
+### Imágenes no son diagramas UML
+
+**Error:** `Las imágenes proporcionadas no se corresponden con diagramas UML`
+
+**Causa:** El modelo `qwen3-vl:8b` detectó que ninguna de las imágenes proporcionadas contiene diagramas UML válidos.
+
+**Solución:**
+1. Verificar que las imágenes sean diagramas UML (clase, secuencia, casos de uso, etc.)
+2. Asegurar que los diagramas sean claros y legibles
+3. Si es un diagrama UML pero no se detecta, intenta:
+   - Mejorar la calidad de la imagen
+   - Aumentar el contraste del diagrama
+   - Usar formato PNG en lugar de JPG
+4. Para texto sin imágenes, desactiva el modo automático y usa directamente `qwen2.5-coder:14b`
 
 ---
 

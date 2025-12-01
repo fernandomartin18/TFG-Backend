@@ -299,11 +299,87 @@ def generate_with_image_stream_auto(
         message_history: Historial de mensajes previos para contexto
         
     Yields:
-        Chunks de texto generados por el modelo
+        Chunks de texto generados por el modelo o eventos de control
     """
     try:
+        # Enviar evento de inicio del paso 1
+        yield "[STEP1_START]"
+        
         # Paso 1: Extraer PlantUML de las imágenes
-        plantuml_content = extract_plantuml_with_vision(image_bytes_list)
+        plantuml_content = ""
+        logger.info(f"Extracting PlantUML from {len(image_bytes_list)} images using qwen3-vl:8b")
+        
+        # Codificar imágenes en base64
+        images_b64 = []
+        for image_bytes in image_bytes_list:
+            img_b64 = base64.b64encode(image_bytes).decode("utf-8")
+            images_b64.append(img_b64)
+        
+        messages = [{
+            "role": "user",
+            "content": """You are an expert in understanding and designing UML diagrams of any type (e.g., class, sequence, use case, activity, state, component, deployment, etc.).
+Your task is to generate accurate PlantUML code blocks from the provided images.
+
+Output rules:
+
+Generate one PlantUML code block per image, following the order in which the images were provided.
+
+For each image, return exactly one complete PlantUML block starting with @startuml and ending with @enduml.
+
+Enclose each PlantUML block inside its own Markdown code block using triple backticks (```), so that all symbols are preserved as text.
+
+If you detect that an image is not a UML diagram, respond exclusively with:
+No diagram
+
+Include all elements exactly as shown in the diagram (classes, lifelines, states, nodes, actors, relationships, messages, transitions, etc., depending on the UML diagram type).
+
+Represent all relationships using the correct PlantUML syntax for that particular UML diagram type.
+
+Preserve all names, labels, visibilities, message directions, stereotypes, types, and notations exactly as they appear.
+
+If any detail is unclear, make a reasonable UML assumption and list it at the top as a comment (' Assumption:), up to a maximum of 5.
+
+Do not repeat any line or phrase.
+
+Do not include any explanation or text outside the PlantUML block.""",
+            "images": images_b64
+        }]
+        
+        payload = {
+            "model": "qwen3-vl:8b",
+            "messages": messages,
+            "stream": True
+        }
+        
+        resp = requests.post(OLLAMA_CHAT_URL, json=payload, stream=True, timeout=OLLAMA_TIMEOUT)
+        resp.raise_for_status()
+        
+        # Stream del paso 1
+        for line in resp.iter_lines():
+            if line:
+                try:
+                    import json
+                    chunk = json.loads(line)
+                    if "message" in chunk and "content" in chunk["message"]:
+                        content = chunk["message"]["content"]
+                        if content:
+                            plantuml_content += content
+                            yield content
+                except json.JSONDecodeError:
+                    logger.warning(f"Could not decode line: {line}")
+                    continue
+        
+        logger.info(f"PlantUML extraction completed, response length: {len(plantuml_content)}")
+        
+        # Verificar si todas las imágenes resultaron en "No diagram"
+        no_diagram_count = plantuml_content.lower().count("no diagram")
+        if no_diagram_count >= len(image_bytes_list) and len(image_bytes_list) > 0:
+            logger.warning(f"All {len(image_bytes_list)} images were identified as non-UML diagrams")
+            raise ValueError("Las imágenes proporcionadas no se corresponden con diagramas UML")
+        
+        # Enviar evento de fin del paso 1 e inicio del paso 2
+        yield "[STEP1_END]"
+        yield "[STEP2_START]"
         
         # Paso 2: Modificar el prompt para reemplazar referencias a imágenes
         modified_prompt = replace_image_references(prompt)
@@ -344,6 +420,9 @@ def generate_with_image_stream_auto(
                     logger.warning(f"Could not decode line: {line}")
                     continue
                     
+    except ValueError:
+        # Re-lanzar ValueError para que sea capturado en el nivel superior
+        raise
     except Exception as e:
         logger.error(f"Error en generate_with_image_stream_auto: {str(e)}")
         raise
