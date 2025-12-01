@@ -78,13 +78,15 @@ class OllamaService {
    * @param {string} prompt - Prompt para la generación
    * @param {Array} images - Array de objetos de imagen con buffer y mimetype
    * @param {Array} messageHistory - Historial de mensajes para contexto (opcional)
+   * @param {boolean} isAutoMode - Si está en modo automático (opcional)
    * @returns {Promise<Stream>} Stream de respuesta
    */
-  async generateCodeStream(model, prompt, images = [], messageHistory = []) {
+  async generateCodeStream(model, prompt, images = [], messageHistory = [], isAutoMode = false) {
     try {
       const formData = new FormData();
       formData.append('model', model);
       formData.append('prompt', prompt);
+      formData.append('auto_mode', isAutoMode ? 'true' : 'false');
       
       // Agregar historial de mensajes si existe
       if (messageHistory && messageHistory.length > 0) {

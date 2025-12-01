@@ -1,5 +1,6 @@
 import requests
 import base64
+import re
 from typing import Dict, Any, Optional, List
 from app.core.config import (
     OLLAMA_CHAT_URL, 
@@ -172,6 +173,163 @@ def generate_with_image_stream(
         raise
     except Exception as e:
         logger.exception("Error inesperado en streaming")
+        raise
+
+
+def extract_plantuml_with_vision(
+    image_bytes_list: List[bytes]
+) -> str:
+    """
+    Extrae código PlantUML de imágenes usando el modelo qwen3-vl:8b.
+    
+    Args:
+        image_bytes_list: Lista de datos de imagen como bytes
+        
+    Returns:
+        String con los bloques PlantUML generados o "No diagram" si no hay diagramas
+    """
+    plantuml_prompt = """You are an expert in understanding and designing UML diagrams of any type (e.g., class, sequence, use case, activity, state, component, deployment, etc.).
+Your task is to generate accurate PlantUML code blocks from the provided images.
+
+Output rules:
+
+Generate one PlantUML code block per image, following the order in which the images were provided.
+
+For each image, return exactly one complete PlantUML block starting with @startuml and ending with @enduml.
+
+Enclose each PlantUML block inside its own Markdown code block using triple backticks (```), so that all symbols are preserved as text.
+
+If you detect that an image is not a UML diagram, respond exclusively with:
+No diagram
+
+Include all elements exactly as shown in the diagram (classes, lifelines, states, nodes, actors, relationships, messages, transitions, etc., depending on the UML diagram type).
+
+Represent all relationships using the correct PlantUML syntax for that particular UML diagram type.
+
+Preserve all names, labels, visibilities, message directions, stereotypes, types, and notations exactly as they appear.
+
+If any detail is unclear, make a reasonable UML assumption and list it at the top as a comment (' Assumption:), up to a maximum of 5.
+
+Do not repeat any line or phrase.
+
+Do not include any explanation or text outside the PlantUML block."""
+    
+    try:
+        logger.info(f"Extracting PlantUML from {len(image_bytes_list)} images using qwen3-vl:8b")
+        
+        # Codificar imágenes en base64
+        images_b64 = []
+        for image_bytes in image_bytes_list:
+            img_b64 = base64.b64encode(image_bytes).decode("utf-8")
+            images_b64.append(img_b64)
+        
+        messages = [{
+            "role": "user",
+            "content": plantuml_prompt,
+            "images": images_b64
+        }]
+        
+        payload = {
+            "model": "qwen3-vl:8b",
+            "messages": messages,
+            "stream": False
+        }
+        
+        resp = _call_ollama(payload)
+        
+        # Extraer el contenido de la respuesta
+        content = ""
+        if "message" in resp and isinstance(resp["message"], dict):
+            content = resp["message"].get("content", "")
+        elif "response" in resp:
+            content = resp["response"]
+        
+        logger.info(f"PlantUML extraction completed, response length: {len(content)}")
+        return content
+        
+    except Exception as e:
+        logger.error(f"Error extracting PlantUML: {str(e)}")
+        raise
+
+
+def replace_image_references(prompt: str) -> str:
+    """
+    Reemplaza referencias a imágenes en el prompt con referencias a código PlantUML.
+    
+    Args:
+        prompt: Texto original del prompt
+        
+    Returns:
+        Prompt modificado con referencias a PlantUML
+    """
+    prompt = re.sub(r'\b(imagenes|imágenes|images)\b', 'PlantUML codes', prompt, flags=re.IGNORECASE)
+    prompt = re.sub(r'\b(imagen|imágen|image)\b', 'PlantUML code', prompt, flags=re.IGNORECASE)
+    return prompt
+
+
+def generate_with_image_stream_auto(
+    prompt: str,
+    image_bytes_list: List[bytes],
+    message_history: Optional[list] = None
+):
+    """
+    Genera una respuesta en modo automático con dos pasos:
+    1. Extrae PlantUML de las imágenes usando qwen3-vl:8b
+    2. Genera la respuesta usando qwen2.5-coder:14b con los códigos PlantUML
+    
+    Args:
+        prompt: Texto del prompt para la generación
+        image_bytes_list: Lista de datos de imagen como bytes
+        message_history: Historial de mensajes previos para contexto
+        
+    Yields:
+        Chunks de texto generados por el modelo
+    """
+    try:
+        # Paso 1: Extraer PlantUML de las imágenes
+        plantuml_content = extract_plantuml_with_vision(image_bytes_list)
+        
+        # Paso 2: Modificar el prompt para reemplazar referencias a imágenes
+        modified_prompt = replace_image_references(prompt)
+        
+        # Construir mensaje con códigos PlantUML
+        final_prompt = f"{modified_prompt}\n\n{plantuml_content}"
+        
+        logger.info(f"Modified prompt created, length: {len(final_prompt)}")
+        
+        # Preparar mensajes para siguiente modelo
+        if message_history and len(message_history) > 0:
+            messages = message_history.copy()
+            # Actualizar el último mensaje del usuario con el prompt modificado
+            messages[-1] = {"role": "user", "content": final_prompt}
+        else:
+            messages = [{"role": "user", "content": final_prompt}]
+        
+        payload = {
+            "model": "qwen2.5-coder:14b",
+            "messages": messages,
+            "stream": True
+        }
+        
+        logger.info(f"Starting streaming with qwen2.5-coder:14b")
+        resp = requests.post(OLLAMA_CHAT_URL, json=payload, stream=True, timeout=OLLAMA_TIMEOUT)
+        resp.raise_for_status()
+        
+        for line in resp.iter_lines():
+            if line:
+                try:
+                    import json
+                    chunk = json.loads(line)
+                    if "message" in chunk and "content" in chunk["message"]:
+                        content = chunk["message"]["content"]
+                        if content:
+                            yield content
+                except json.JSONDecodeError:
+                    logger.warning(f"Could not decode line: {line}")
+                    continue
+                    
+    except Exception as e:
+        logger.error(f"Error en generate_with_image_stream_auto: {str(e)}")
         raise
 
 

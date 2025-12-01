@@ -75,7 +75,7 @@ export class GenerateController {
    */
   async generateStream(req, res) {
     try {
-      const { model, prompt, messages } = req.body;
+      const { model, prompt, messages, autoMode } = req.body;
       const images = req.files || [];
 
       // Validación de campos requeridos
@@ -94,6 +94,9 @@ export class GenerateController {
           logger.error('Error parsing messages:', e);
         }
       }
+      
+      // Detectar si es modo automático
+      const isAutoMode = autoMode === 'true';
 
       // Validación de imágenes si se proporcionan
       if (images.length > 0) {
@@ -134,7 +137,8 @@ export class GenerateController {
         model,
         prompt,
         images,
-        messageHistory
+        messageHistory,
+        isAutoMode
       );
 
       // Pipe del stream de FastAPI al cliente

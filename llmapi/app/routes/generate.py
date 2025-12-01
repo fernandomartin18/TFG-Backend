@@ -1,7 +1,7 @@
 from typing import Optional, List
 from fastapi import APIRouter, Form, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
-from app.services.ollama_service import generate_with_image, generate_with_image_stream
+from app.services.ollama_service import generate_with_image, generate_with_image_stream, generate_with_image_stream_auto
 from app.schemas.generate_request import GenerateResponse
 from app.core.logger import logger
 
@@ -119,15 +119,19 @@ async def generate_stream(
     model: str = Form(..., description="Nombre del modelo en Ollama"),
     prompt: str = Form(..., description="Texto del prompt"),
     messages: Optional[str] = Form(None, description="Historial de mensajes en formato JSON"),
-    images: Optional[List[UploadFile]] = File(None, description="Archivos de imagen opcionales (hasta 5)")
+    images: Optional[List[UploadFile]] = File(None, description="Archivos de imagen opcionales (hasta 5)"),
+    auto_mode: Optional[str] = Form("false", description="Si está en modo automático")
 ):
     """
     Genera texto en streaming, mostrando la respuesta a medida que se genera.
+    En modo automático con imágenes, primero extrae PlantUML y luego genera con qwen2.5-coder:14b.
     
     Args:
         model: Nombre del modelo en Ollama
         prompt: Texto del prompt para la generación
+        messages: Historial de mensajes en formato JSON
         images: Lista de archivos de imagen opcionales para análisis multimodal
+        auto_mode: Si está en modo automático ("true" o "false")
         
     Returns:
         StreamingResponse con chunks de texto
@@ -155,7 +159,7 @@ async def generate_stream(
                 
                 image_bytes_list.append(image_bytes)
         
-        logger.info(f"Starting streaming with model: {model}, prompt length: {len(prompt)}, {len(image_bytes_list)} images")
+        logger.info(f"Starting streaming with model: {model}, prompt length: {len(prompt)}, {len(image_bytes_list)} images, auto_mode: {auto_mode}")
         
         # Parsear el historial de mensajes si está presente
         message_history = []
@@ -167,17 +171,33 @@ async def generate_stream(
             except json.JSONDecodeError as e:
                 logger.error(f"Error parsing message history: {str(e)}")
         
+        # Check if auto mode with images should use two-step process
+        is_auto_with_images = auto_mode.lower() == "true" and len(image_bytes_list) > 0
+        
         def event_generator():
             try:
                 import json
-                for chunk in generate_with_image_stream(
-                    model=model, 
-                    prompt=prompt, 
-                    image_bytes_list=image_bytes_list,
-                    message_history=message_history
-                ):
-                    # Codificar en JSON para preservar caracteres especiales y saltos de línea
-                    yield f"data: {json.dumps(chunk)}\n\n"
+                
+                if is_auto_with_images:
+                    # Proceso en dos pasos: extracción de PlantUML y luego generación de código
+                    logger.info("Using two-step auto mode with PlantUML extraction")
+                    for chunk in generate_with_image_stream_auto(
+                        prompt=prompt,
+                        image_bytes_list=image_bytes_list,
+                        message_history=message_history
+                    ):
+                        # Codificar en JSON para preservar caracteres especiales y saltos de línea
+                        yield f"data: {json.dumps(chunk)}\n\n"
+                else:
+                    # Generación estándar
+                    for chunk in generate_with_image_stream(
+                        model=model, 
+                        prompt=prompt, 
+                        image_bytes_list=image_bytes_list,
+                        message_history=message_history
+                    ):
+                        # Codificar en JSON para preservar caracteres especiales y saltos de línea
+                        yield f"data: {json.dumps(chunk)}\n\n"
                 yield "data: [DONE]\n\n"
             except Exception as e:
                 logger.error(f"Error in stream generator: {str(e)}")
