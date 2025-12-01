@@ -186,7 +186,10 @@ def extract_plantuml_with_vision(
         image_bytes_list: Lista de datos de imagen como bytes
         
     Returns:
-        String con los bloques PlantUML generados o "No diagram" si no hay diagramas
+        String con los bloques PlantUML generados
+        
+    Raises:
+        ValueError: Si todas las imágenes no son diagramas UML
     """
     plantuml_prompt = """You are an expert in understanding and designing UML diagrams of any type (e.g., class, sequence, use case, activity, state, component, deployment, etc.).
 Your task is to generate accurate PlantUML code blocks from the provided images.
@@ -245,8 +248,21 @@ Do not include any explanation or text outside the PlantUML block."""
             content = resp["response"]
         
         logger.info(f"PlantUML extraction completed, response length: {len(content)}")
+        
+        # Verificar si todas las imágenes resultaron en "No diagram"
+        # Contar cuántas veces aparece "No diagram" en la respuesta
+        no_diagram_count = content.lower().count("no diagram")
+        
+        # Si hay tantos "No diagram" como imágenes, significa que ninguna es un diagrama UML
+        if no_diagram_count >= len(image_bytes_list) and len(image_bytes_list) > 0:
+            logger.warning(f"All {len(image_bytes_list)} images were identified as non-UML diagrams")
+            raise ValueError("Las imágenes proporcionadas no se corresponden con diagramas UML.")
+        
         return content
         
+    except ValueError:
+        # Re-lanzar ValueError para que sea capturado en el nivel superior
+        raise
     except Exception as e:
         logger.error(f"Error extracting PlantUML: {str(e)}")
         raise

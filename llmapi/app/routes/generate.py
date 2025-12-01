@@ -181,13 +181,20 @@ async def generate_stream(
                 if is_auto_with_images:
                     # Proceso en dos pasos: extracción de PlantUML y luego generación de código
                     logger.info("Using two-step auto mode with PlantUML extraction")
-                    for chunk in generate_with_image_stream_auto(
-                        prompt=prompt,
-                        image_bytes_list=image_bytes_list,
-                        message_history=message_history
-                    ):
-                        # Codificar en JSON para preservar caracteres especiales y saltos de línea
-                        yield f"data: {json.dumps(chunk)}\n\n"
+                    try:
+                        for chunk in generate_with_image_stream_auto(
+                            prompt=prompt,
+                            image_bytes_list=image_bytes_list,
+                            message_history=message_history
+                        ):
+                            # Codificar en JSON para preservar caracteres especiales y saltos de línea
+                            yield f"data: {json.dumps(chunk)}\n\n"
+                    except ValueError as ve:
+                        # Error específico cuando las imágenes no son diagramas
+                        logger.warning(f"No UML diagrams detected: {str(ve)}")
+                        yield f"data: {json.dumps(str(ve))}\n\n"
+                        yield "data: [DONE]\n\n"
+                        return
                 else:
                     # Generación estándar
                     for chunk in generate_with_image_stream(
