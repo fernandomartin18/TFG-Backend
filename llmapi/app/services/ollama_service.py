@@ -562,8 +562,21 @@ No diagram""",
         # Paso 2: Modificar el prompt para reemplazar referencias a imágenes
         modified_prompt = replace_image_references(prompt)
         
-        # Construir mensaje con códigos PlantUML
-        final_prompt = f"{modified_prompt}\n\n{plantuml_content}"
+        # Extraer solo los bloques de código (entre triple backticks) del contenido PlantUML
+        code_blocks = re.findall(r'```[\s\S]*?```', plantuml_content)
+        filtered_plantuml = '\n\n'.join(code_blocks) if code_blocks else plantuml_content
+        
+        logger.info(f"Extracted {len(code_blocks)} code blocks from PlantUML content")
+        
+        # Añadir instrucciones para generar bloques de código separados
+        code_generation_instructions = """
+
+IMPORTANT: When generating code from the PlantUML:
+- Create a SEPARATE code block for EACH class, interface, or main component. Each code block should be wrapped in triple backticks (```).
+- RESPOND IN THE SAME LANGUAGE as the user's prompt (NOT always in English). If the user writes in Spanish, respond in Spanish. If in English, respond in English, etc."""
+        
+        # Construir mensaje con códigos PlantUML e instrucciones
+        final_prompt = f"{modified_prompt}{code_generation_instructions}\n\n{filtered_plantuml}"
         
         logger.info(f"Modified prompt created, length: {len(final_prompt)}")
         
