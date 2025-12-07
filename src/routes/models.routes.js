@@ -11,6 +11,13 @@ const router = express.Router();
 router.get('/', modelsController.listModels.bind(modelsController));
 
 /**
+ * @route   GET /api/models/auto-select
+ * @desc    Obtiene los modelos seleccionados automáticamente
+ * @access  Public
+ */
+router.get('/auto-select', modelsController.getAutoSelectedModels.bind(modelsController));
+
+/**
  * @route   POST /api/models/unload
  * @desc    Descarga un modelo de la memoria
  * @access  Public

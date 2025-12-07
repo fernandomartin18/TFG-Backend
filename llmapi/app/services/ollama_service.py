@@ -64,6 +64,122 @@ def list_models() -> Dict[str, Any]:
         return {"error": "Error inesperado al listar modelos", "detail": str(e)}
 
 
+def _extract_model_size(model_name: str) -> int:
+    """
+    Extrae el tamaño del modelo del nombre (en billones de parámetros).
+    
+    Args:
+        model_name: Nombre del modelo (ej: "qwen3-vl:8b", "llama3:70b")
+        
+    Returns:
+        Tamaño estimado en billones de parámetros (0 si no se puede determinar)
+    """
+    # Buscar patrones como :7b
+    match = re.search(r':(\d+)b', model_name.lower())
+    if match:
+        return int(match.group(1))
+    
+    # Buscar patrones sin ":"
+    match = re.search(r'(\d+)b', model_name.lower())
+    if match:
+        return int(match.group(1))
+    
+    return 0
+
+
+def _is_vision_model(model_name: str) -> bool:
+    """
+    Determina si un modelo tiene capacidades de visión.
+    
+    Args:
+        model_name: Nombre del modelo
+        
+    Returns:
+        True si el modelo tiene capacidades de visión
+    """
+    vision_keywords = ['vl', 'vision', 'llava', 'bakllava', 'moondream']
+    model_lower = model_name.lower()
+    return any(keyword in model_lower for keyword in vision_keywords)
+
+
+def _is_coding_model(model_name: str) -> bool:
+    """
+    Determina si un modelo está especializado en código.
+    
+    Args:
+        model_name: Nombre del modelo
+        
+    Returns:
+        True si el modelo está especializado en código
+    """
+    coding_keywords = ['coder', 'code', 'codellama', 'starcoder', 'deepseek-coder']
+    model_lower = model_name.lower()
+    return any(keyword in model_lower for keyword in coding_keywords)
+
+
+def select_best_models() -> Dict[str, str]:
+    """
+    Selecciona automáticamente los mejores modelos disponibles para el modo auto.
+    
+    Returns:
+        Diccionario con 'vision_model' y 'coding_model'
+    """
+    try:
+        models_data = list_models()
+        if "error" in models_data or "models" not in models_data:
+            logger.error("No se pudieron obtener los modelos disponibles")
+            # Fallback a modelos por defecto
+            return {
+                "vision_model": "qwen3-vl:8b",
+                "coding_model": "qwen2.5-coder:14b"
+            }
+        
+        models = models_data.get("models", [])
+        
+        # Filtrar modelos con visión
+        vision_models = [m for m in models if _is_vision_model(m.get("name", ""))]
+        
+        # Filtrar modelos de código
+        coding_models = [m for m in models if _is_coding_model(m.get("name", ""))]
+        
+        # Seleccionar el mejor modelo de visión
+        best_vision = None
+        if vision_models:
+            best_vision = max(vision_models, key=lambda m: _extract_model_size(m.get("name", "")))
+        
+        # Seleccionar el mejor modelo de código
+        best_coding = None
+        if coding_models:
+            best_coding = max(coding_models, key=lambda m: _extract_model_size(m.get("name", "")))
+        
+        # Si no hay modelo de código, usar el más grande disponible
+        if not best_coding and models:
+            # Excluir modelos de visión para la selección general
+            non_vision_models = [m for m in models if not _is_vision_model(m.get("name", ""))]
+            if non_vision_models:
+                best_coding = max(non_vision_models, key=lambda m: _extract_model_size(m.get("name", "")))
+            else:
+                best_coding = max(models, key=lambda m: _extract_model_size(m.get("name", "")))
+        
+        vision_model_name = best_vision.get("name", "qwen3-vl:8b") if best_vision else "qwen3-vl:8b"
+        coding_model_name = best_coding.get("name", "qwen2.5-coder:14b") if best_coding else "qwen2.5-coder:14b"
+        
+        logger.info(f"Modelos seleccionados automáticamente: vision={vision_model_name}, coding={coding_model_name}")
+        
+        return {
+            "vision_model": vision_model_name,
+            "coding_model": coding_model_name
+        }
+        
+    except Exception as e:
+        logger.error(f"Error seleccionando modelos: {str(e)}")
+        # Fallback a modelos por defecto
+        return {
+            "vision_model": "qwen3-vl:8b",
+            "coding_model": "qwen2.5-coder:14b"
+        }
+
+
 def generate_with_image(
     model: str, 
     prompt: str, 
@@ -177,13 +293,15 @@ def generate_with_image_stream(
 
 
 def extract_plantuml_with_vision(
-    image_bytes_list: List[bytes]
+    image_bytes_list: List[bytes],
+    vision_model: Optional[str] = None
 ) -> str:
     """
-    Extrae código PlantUML de imágenes usando el modelo qwen3-vl:8b.
+    Extrae código PlantUML de imágenes usando un modelo con capacidades de visión.
     
     Args:
         image_bytes_list: Lista de datos de imagen como bytes
+        vision_model: Nombre del modelo de visión a usar (si None, se selecciona automáticamente)
         
     Returns:
         String con los bloques PlantUML generados
@@ -191,34 +309,63 @@ def extract_plantuml_with_vision(
     Raises:
         ValueError: Si todas las imágenes no son diagramas UML
     """
-    plantuml_prompt = """You are an expert in understanding and designing UML diagrams of any type (e.g., class, sequence, use case, activity, state, component, deployment, etc.).
-Your task is to generate accurate PlantUML code blocks from the provided images.
+    # Seleccionar modelo si no se especifica
+    if not vision_model:
+        best_models = select_best_models()
+        vision_model = best_models["vision_model"]
+    
+    plantuml_prompt = """You are an expert in interpreting UML diagrams and generating precise PlantUML code.
 
-Output rules:
+Your task: From each provided image, output ONLY one PlantUML code block, or the phrase "No diagram".
 
-Generate one PlantUML code block per image, following the order in which the images were provided.
+STRICT OUTPUT RULES (MUST FOLLOW):
 
-For each image, return exactly one complete PlantUML block starting with @startuml and ending with @enduml.
+1. For each image, output EXACTLY ONE of the following:
+   a) A complete PlantUML block:
+      - Starts with: @startuml
+      - Ends with: @enduml
+      - Wrapped in a Markdown code block using triple backticks (```).
+   b) OR, if the image is not a UML diagram:
+      - Output ONLY the exact text: No diagram
 
-Enclose each PlantUML block inside its own Markdown code block using triple backticks (```), so that all symbols are preserved as text.
+2. OUTSIDE the code block:
+   - DO NOT output explanations.
+   - DO NOT output descriptions.
+   - DO NOT output reasoning.
+   - DO NOT output apologies.
+   - DO NOT output summaries.
+   - DO NOT output transitions.
+   - DO NOT output commentary.
+   - DO NOT output anything except either the code block or "No diagram".
 
-If you detect that an image is not a UML diagram, respond exclusively with:
-No diagram
+3. Inside the code block:
+   - Include every UML element visible in the image (classes, actors, lifelines, messages, states, components, etc.).
+   - Preserve all names, labels, visibilities, stereotypes, and notation exactly as they appear.
+   - Use correct PlantUML syntax for the detected diagram type.
+   - If *and only if* something is unclear, add at the TOP of the code block up to 5 lines starting with:
+        ' Assumption:
+     (These comments MUST stay inside the code block.)
 
-Include all elements exactly as shown in the diagram (classes, lifelines, states, nodes, actors, relationships, messages, transitions, etc., depending on the UML diagram type).
+4. NEVER:
+   - Never add text before or after the code block.
+   - Never explain decisions.
+   - Never justify assumptions.
+   - Never restate instructions.
 
-Represent all relationships using the correct PlantUML syntax for that particular UML diagram type.
+5. Output format MUST be strictly:
+   For a UML diagram:
+```
+@startuml
+' Assumption: ...
+...PlantUML content...
+@enduml
+```
 
-Preserve all names, labels, visibilities, message directions, stereotypes, types, and notations exactly as they appear.
-
-If any detail is unclear, make a reasonable UML assumption and list it at the top as a comment (' Assumption:), up to a maximum of 5.
-
-Do not repeat any line or phrase.
-
-Do not include any explanation or text outside the PlantUML block."""
+OR, for a non-diagram:
+No diagram"""
     
     try:
-        logger.info(f"Extracting PlantUML from {len(image_bytes_list)} images using qwen3-vl:8b")
+        logger.info(f"Extracting PlantUML from {len(image_bytes_list)} images using {vision_model}")
         
         # Codificar imágenes en base64
         images_b64 = []
@@ -233,7 +380,7 @@ Do not include any explanation or text outside the PlantUML block."""
         }]
         
         payload = {
-            "model": "qwen3-vl:8b",
+            "model": vision_model,
             "messages": messages,
             "stream": False
         }
@@ -290,8 +437,8 @@ def generate_with_image_stream_auto(
 ):
     """
     Genera una respuesta en modo automático con dos pasos:
-    1. Extrae PlantUML de las imágenes usando qwen3-vl:8b
-    2. Genera la respuesta usando qwen2.5-coder:14b con los códigos PlantUML
+    1. Extrae PlantUML de las imágenes usando el mejor modelo con visión disponible
+    2. Genera la respuesta usando el mejor modelo de código disponible con los códigos PlantUML
     
     Args:
         prompt: Texto del prompt para la generación
@@ -302,12 +449,19 @@ def generate_with_image_stream_auto(
         Chunks de texto generados por el modelo o eventos de control
     """
     try:
+        # Seleccionar los mejores modelos disponibles
+        best_models = select_best_models()
+        vision_model = best_models["vision_model"]
+        coding_model = best_models["coding_model"]
+        
+        logger.info(f"Auto mode using: vision={vision_model}, coding={coding_model}")
+        
         # Enviar evento de inicio del paso 1
         yield "[STEP1_START]"
         
         # Paso 1: Extraer PlantUML de las imágenes
         plantuml_content = ""
-        logger.info(f"Extracting PlantUML from {len(image_bytes_list)} images using qwen3-vl:8b")
+        logger.info(f"Extracting PlantUML from {len(image_bytes_list)} images using {vision_model}")
         
         # Codificar imágenes en base64
         images_b64 = []
@@ -317,36 +471,60 @@ def generate_with_image_stream_auto(
         
         messages = [{
             "role": "user",
-            "content": """You are an expert in understanding and designing UML diagrams of any type (e.g., class, sequence, use case, activity, state, component, deployment, etc.).
-Your task is to generate accurate PlantUML code blocks from the provided images.
+            "content": """You are an expert in interpreting UML diagrams and generating precise PlantUML code.
 
-Output rules:
+Your task: From each provided image, output ONLY one PlantUML code block, or the phrase "No diagram".
 
-Generate one PlantUML code block per image, following the order in which the images were provided.
+STRICT OUTPUT RULES (MUST FOLLOW):
 
-For each image, return exactly one complete PlantUML block starting with @startuml and ending with @enduml.
+1. For each image, output EXACTLY ONE of the following:
+   a) A complete PlantUML block:
+      - Starts with: @startuml
+      - Ends with: @enduml
+      - Wrapped in a Markdown code block using triple backticks (```).
+   b) OR, if the image is not a UML diagram:
+      - Output ONLY the exact text: No diagram
 
-Enclose each PlantUML block inside its own Markdown code block using triple backticks (```), so that all symbols are preserved as text.
+2. OUTSIDE the code block:
+   - DO NOT output explanations.
+   - DO NOT output descriptions.
+   - DO NOT output reasoning.
+   - DO NOT output apologies.
+   - DO NOT output summaries.
+   - DO NOT output transitions.
+   - DO NOT output commentary.
+   - DO NOT output anything except either the code block or "No diagram".
 
-If you detect that an image is not a UML diagram, respond exclusively with:
-No diagram
+3. Inside the code block:
+   - Include every UML element visible in the image (classes, actors, lifelines, messages, states, components, etc.).
+   - Preserve all names, labels, visibilities, stereotypes, and notation exactly as they appear.
+   - Use correct PlantUML syntax for the detected diagram type.
+   - If *and only if* something is unclear, add at the TOP of the code block up to 5 lines starting with:
+        ' Assumption:
+     (These comments MUST stay inside the code block.)
 
-Include all elements exactly as shown in the diagram (classes, lifelines, states, nodes, actors, relationships, messages, transitions, etc., depending on the UML diagram type).
+4. NEVER:
+   - Never add text before or after the code block.
+   - Never explain decisions.
+   - Never justify assumptions.
+   - Never restate instructions.
 
-Represent all relationships using the correct PlantUML syntax for that particular UML diagram type.
+5. Output format MUST be strictly:
+   For a UML diagram:
+```
+@startuml
+' Assumption: ...
+...PlantUML content...
+@enduml
+```
 
-Preserve all names, labels, visibilities, message directions, stereotypes, types, and notations exactly as they appear.
-
-If any detail is unclear, make a reasonable UML assumption and list it at the top as a comment (' Assumption:), up to a maximum of 5.
-
-Do not repeat any line or phrase.
-
-Do not include any explanation or text outside the PlantUML block.""",
+OR, for a non-diagram:
+No diagram""",
             "images": images_b64
         }]
         
         payload = {
-            "model": "qwen3-vl:8b",
+            "model": vision_model,
             "messages": messages,
             "stream": True
         }
@@ -398,12 +576,12 @@ Do not include any explanation or text outside the PlantUML block.""",
             messages = [{"role": "user", "content": final_prompt}]
         
         payload = {
-            "model": "qwen2.5-coder:14b",
+            "model": coding_model,
             "messages": messages,
             "stream": True
         }
         
-        logger.info(f"Starting streaming with qwen2.5-coder:14b")
+        logger.info(f"Starting streaming with {coding_model}")
         resp = requests.post(OLLAMA_CHAT_URL, json=payload, stream=True, timeout=OLLAMA_TIMEOUT)
         resp.raise_for_status()
         

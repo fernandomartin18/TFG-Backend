@@ -1,6 +1,6 @@
 from typing import Dict, Any
 from fastapi import APIRouter, HTTPException
-from app.services.ollama_service import list_models, unload_model
+from app.services.ollama_service import list_models, unload_model, select_best_models
 from app.schemas.generate_request import UnloadRequest, UnloadResponse
 from app.core.logger import logger
 
@@ -37,6 +37,31 @@ def get_models():
         raise HTTPException(
             status_code=500,
             detail=f"Error al obtener modelos: {str(e)}"
+        )
+
+
+@router.get("/auto-select", response_model=Dict[str, str])
+def get_auto_selected_models():
+    """
+    Selecciona automáticamente los mejores modelos disponibles.
+    Devuelve el mejor modelo con visión y el mejor modelo de código.
+    
+    Returns:
+        Dictionary con 'vision_model' y 'coding_model'
+        
+    Raises:
+        HTTPException: Si hay error al seleccionar los modelos
+    """
+    try:
+        selected_models = select_best_models()
+        logger.info(f"Auto-selected models: {selected_models}")
+        return selected_models
+        
+    except Exception as e:
+        logger.exception("Unexpected error in /models/auto-select")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al seleccionar modelos: {str(e)}"
         )
 
 

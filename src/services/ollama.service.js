@@ -143,6 +143,24 @@ class OllamaService {
   }
 
   /**
+   * Obtiene los modelos seleccionados automáticamente
+   * @returns {Promise<Object>} Modelos seleccionados (vision_model, coding_model)
+   */
+  async getAutoSelectedModels() {
+    try {
+      logger.info('Fetching auto-selected models from FastAPI');
+      const response = await axios.get(`${this.baseURL}/models/auto-select`, {
+        timeout: 30000,
+      });
+      logger.info(`Auto-selected models: vision=${response.data.vision_model}, coding=${response.data.coding_model}`);
+      return response.data;
+    } catch (error) {
+      logger.error('Error fetching auto-selected models:', error.message);
+      throw this._handleError(error);
+    }
+  }
+
+  /**
    * Maneja errores de axios y los transforma en errores más descriptivos
    * @private
    */
