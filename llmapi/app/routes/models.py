@@ -40,22 +40,33 @@ def get_models():
         )
 
 
-@router.get("/auto-select", response_model=Dict[str, str])
+@router.get("/auto-select", response_model=Dict[str, Any])
 def get_auto_selected_models():
     """
     Selecciona automáticamente los mejores modelos disponibles.
     Devuelve el mejor modelo con visión y el mejor modelo de código.
     
     Returns:
-        Dictionary con 'vision_model' y 'coding_model'
+        Dictionary con 'auto_available' (bool) y opcionalmente 'vision_model' y 'coding_model'
         
     Raises:
         HTTPException: Si hay error al seleccionar los modelos
     """
     try:
         selected_models = select_best_models()
+        
+        if selected_models is None:
+            logger.info("Auto mode not available: insufficient models")
+            return {
+                "auto_available": False
+            }
+        
         logger.info(f"Auto-selected models: {selected_models}")
-        return selected_models
+        return {
+            "auto_available": True,
+            "vision_model": selected_models["vision_model"],
+            "coding_model": selected_models["coding_model"]
+        }
         
     except Exception as e:
         logger.exception("Unexpected error in /models/auto-select")

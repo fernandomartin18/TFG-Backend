@@ -117,30 +117,31 @@ def _is_coding_model(model_name: str) -> bool:
     return any(keyword in model_lower for keyword in coding_keywords)
 
 
-def select_best_models() -> Dict[str, str]:
+def select_best_models() -> Optional[Dict[str, str]]:
     """
     Selecciona automáticamente los mejores modelos disponibles para el modo auto.
     
     Returns:
-        Diccionario con 'vision_model' y 'coding_model'
+        Diccionario con 'vision_model' y 'coding_model', o None si no hay modelos suficientes
     """
     try:
         models_data = list_models()
         if "error" in models_data or "models" not in models_data:
             logger.error("No se pudieron obtener los modelos disponibles")
-            # Fallback a modelos por defecto
-            return {
-                "vision_model": "qwen3-vl:8b",
-                "coding_model": "qwen2.5-coder:14b"
-            }
+            return None
         
         models = models_data.get("models", [])
+        
+        if not models:
+            logger.warning("No hay modelos disponibles")
+            return None
         
         # Filtrar modelos con visión
         vision_models = [m for m in models if _is_vision_model(m.get("name", ""))]
         
-        # Filtrar modelos de código
+        # Filtrar modelos sin visión
         coding_models = [m for m in models if _is_coding_model(m.get("name", ""))]
+        non_vision_models = [m for m in models if not _is_vision_model(m.get("name", ""))]
         
         # Seleccionar el mejor modelo de visión
         best_vision = None
@@ -151,18 +152,17 @@ def select_best_models() -> Dict[str, str]:
         best_coding = None
         if coding_models:
             best_coding = max(coding_models, key=lambda m: _extract_model_size(m.get("name", "")))
+        elif non_vision_models:
+            # Si no hay modelo de código específico, usar el más grande que no sea de visión
+            best_coding = max(non_vision_models, key=lambda m: _extract_model_size(m.get("name", "")))
         
-        # Si no hay modelo de código, usar el más grande disponible
-        if not best_coding and models:
-            # Excluir modelos de visión para la selección general
-            non_vision_models = [m for m in models if not _is_vision_model(m.get("name", ""))]
-            if non_vision_models:
-                best_coding = max(non_vision_models, key=lambda m: _extract_model_size(m.get("name", "")))
-            else:
-                best_coding = max(models, key=lambda m: _extract_model_size(m.get("name", "")))
+        # Verificar que hay ambos tipos de modelos
+        if not best_vision or not best_coding:
+            logger.warning(f"Modelos insuficientes para modo auto: vision={bool(best_vision)}, coding={bool(best_coding)}")
+            return None
         
-        vision_model_name = best_vision.get("name", "qwen3-vl:8b") if best_vision else "qwen3-vl:8b"
-        coding_model_name = best_coding.get("name", "qwen2.5-coder:14b") if best_coding else "qwen2.5-coder:14b"
+        vision_model_name = best_vision.get("name", "")
+        coding_model_name = best_coding.get("name", "")
         
         logger.info(f"Modelos seleccionados automáticamente: vision={vision_model_name}, coding={coding_model_name}")
         
@@ -173,11 +173,7 @@ def select_best_models() -> Dict[str, str]:
         
     except Exception as e:
         logger.error(f"Error seleccionando modelos: {str(e)}")
-        # Fallback a modelos por defecto
-        return {
-            "vision_model": "qwen3-vl:8b",
-            "coding_model": "qwen2.5-coder:14b"
-        }
+        return None
 
 
 def generate_with_image(
