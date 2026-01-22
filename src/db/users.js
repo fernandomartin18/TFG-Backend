@@ -97,3 +97,14 @@ export const getUserPasswordHash = async (username) => {
   );
   return result.rows[0];
 };
+
+/**
+ * Obtener el hash de contraseña de un usuario por ID
+ */
+export const getUserPasswordHashById = async (id) => {
+  const result = await query(
+    'SELECT id, password_hash FROM users WHERE id = $1',
+    [id]
+  );
+  return result.rows[0];
+};

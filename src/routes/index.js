@@ -1,5 +1,6 @@
 import express from 'express';
 import healthRoutes from './health.routes.js';
+import authRoutes from './auth.routes.js';
 import usersRoutes from './users.routes.js';
 import modelsRoutes from './models.routes.js';
 import generateRoutes from './generate.routes.js';
@@ -10,6 +11,11 @@ const router = express.Router();
  * Health check (con verificación de DB y servicios)
  */
 router.use('/health', healthRoutes);
+
+/**
+ * Rutas de autenticación
+ */
+router.use('/auth', authRoutes);
 
 /**
  * Rutas de usuarios

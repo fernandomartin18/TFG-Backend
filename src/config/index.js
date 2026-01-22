@@ -43,5 +43,13 @@ export const config = {
     idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT) || 30000,
     connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT) || 2000,
   },
+
+  // JWT
+  jwt: {
+    secret: process.env.JWT_SECRET || 'default_secret',
+    refreshSecret: process.env.JWT_REFRESH_SECRET || 'default_refresh_secret',
+    expiresIn: process.env.JWT_EXPIRES_IN || '15d',
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+  },
 };
 
