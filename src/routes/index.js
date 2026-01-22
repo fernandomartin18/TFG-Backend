@@ -1,19 +1,20 @@
 import express from 'express';
+import healthRoutes from './health.routes.js';
+import usersRoutes from './users.routes.js';
 import modelsRoutes from './models.routes.js';
 import generateRoutes from './generate.routes.js';
 
 const router = express.Router();
 
 /**
- * Estado de la API
+ * Health check (con verificación de DB y servicios)
  */
-router.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    service: 'TFG Backend API Gateway',
-    timestamp: new Date().toISOString(),
-  });
-});
+router.use('/health', healthRoutes);
+
+/**
+ * Rutas de usuarios
+ */
+router.use('/users', usersRoutes);
 
 /**
  * Rutas de modelos
