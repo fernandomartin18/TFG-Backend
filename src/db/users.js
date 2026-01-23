@@ -89,11 +89,12 @@ export const deleteUser = async (id) => {
 
 /**
  * Obtener el hash de contraseña de un usuario (para autenticación)
+ * Busca por email
  */
-export const getUserPasswordHash = async (username) => {
+export const getUserPasswordHash = async (email) => {
   const result = await query(
-    'SELECT id, password_hash FROM users WHERE username = $1',
-    [username]
+    'SELECT id, password_hash FROM users WHERE  email = $1',
+    [email]
   );
   return result.rows[0];
 };

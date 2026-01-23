@@ -70,10 +70,10 @@ export const register = async (req, res) => {
  */
 export const login = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
 
-    // Obtener el usuario con el hash de contraseña
-    const user = await users.getUserPasswordHash(username);
+    // Obtener el usuario con el hash de contraseña (busca por email)
+    const user = await users.getUserPasswordHash(email);
 
     if (!user) {
       return res.status(401).json({
@@ -98,7 +98,7 @@ export const login = async (req, res) => {
     // Generar tokens
     const tokens = generateTokens(userData);
 
-    logger.info(`Usuario autenticado: ${username} (ID: ${user.id})`);
+    logger.info(`Usuario autenticado: ${userData.username} (ID: ${userData.id})`);
 
     res.json({
       message: 'Inicio de sesión exitoso',
