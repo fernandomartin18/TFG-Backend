@@ -30,9 +30,11 @@ export const registerValidation = [
  * Validaciones para login
  */
 export const loginValidation = [
-  body('username')
+  body('email')
     .trim()
-    .notEmpty().withMessage('El username es requerido'),
+    .notEmpty().withMessage('El email es requerido')
+    .isEmail().withMessage('Debe ser un email válido')
+    .normalizeEmail(),
   
   body('password')
     .notEmpty().withMessage('La contraseña es requerida'),

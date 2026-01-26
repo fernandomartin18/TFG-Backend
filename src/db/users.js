@@ -100,6 +100,17 @@ export const getUserPasswordHash = async (email) => {
 };
 
 /**
+ * Obtener el hash de contraseña de un usuario por username
+ */
+export const getUserPasswordHashByUsername = async (username) => {
+  const result = await query(
+    'SELECT id, password_hash FROM users WHERE username = $1',
+    [username]
+  );
+  return result.rows[0];
+};
+
+/**
  * Obtener el hash de contraseña de un usuario por ID
  */
 export const getUserPasswordHashById = async (id) => {
