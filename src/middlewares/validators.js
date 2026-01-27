@@ -57,8 +57,16 @@ export const updateUserValidation = [
   
   body('avatarUrl')
     .optional()
-    .trim()
-    .isURL().withMessage('La URL del avatar debe ser válida'),
+    .custom((value) => {
+      // Permitir URLs o base64
+      if (!value) return true;
+      const isUrl = /^https?:\/\/.+/.test(value);
+      const isBase64 = /^data:image\/(png|jpeg|jpg|gif|webp);base64,/.test(value);
+      if (!isUrl && !isBase64) {
+        throw new Error('El avatar debe ser una URL válida o una imagen en base64');
+      }
+      return true;
+    }),
 ];
 
 /**

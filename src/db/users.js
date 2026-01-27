@@ -51,15 +51,19 @@ export const createUser = async ({ username, email, passwordHash, avatarUrl = nu
  */
 export const updateUser = async (id, updates) => {
   const { username, email, avatarUrl } = updates;
+  
+  // Convertir cadena vacía a null para eliminar avatar
+  const processedAvatarUrl = avatarUrl === '' ? null : avatarUrl;
+  
   const result = await query(
     `UPDATE users 
      SET username = COALESCE($2, username),
          email = COALESCE($3, email),
-         avatar_url = COALESCE($4, avatar_url),
+         avatar_url = CASE WHEN $4::TEXT = 'DELETE_AVATAR' THEN NULL ELSE COALESCE($4, avatar_url) END,
          updated_at = CURRENT_TIMESTAMP
      WHERE id = $1
      RETURNING id, username, email, avatar_url, created_at, updated_at`,
-    [id, username, email, avatarUrl]
+    [id, username, email, processedAvatarUrl === null ? 'DELETE_AVATAR' : processedAvatarUrl]
   );
   return result.rows[0];
 };
