@@ -4,6 +4,9 @@ import authRoutes from './auth.routes.js';
 import usersRoutes from './users.routes.js';
 import modelsRoutes from './models.routes.js';
 import generateRoutes from './generate.routes.js';
+import chatsRoutes from './chats.routes.js';
+import messagesRoutes from './messages.routes.js';
+import codesRoutes from './codes.routes.js';
 
 const router = express.Router();
 
@@ -31,5 +34,20 @@ router.use('/models', modelsRoutes);
  * Rutas de generación
  */
 router.use('/generate', generateRoutes);
+
+/**
+ * Rutas de chats
+ */
+router.use('/chats', chatsRoutes);
+
+/**
+ * Rutas de mensajes (incluye rutas anidadas en chats)
+ */
+router.use('/', messagesRoutes);
+
+/**
+ * Rutas de códigos generados (incluye rutas anidadas en mensajes)
+ */
+router.use('/', codesRoutes);
 
 export default router;
