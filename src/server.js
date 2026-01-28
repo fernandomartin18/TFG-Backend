@@ -18,8 +18,27 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Error handler para errores de parsing de body
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    logger.error('Error de parsing JSON:', err.message);
+    return res.status(400).json({ 
+      error: 'Invalid JSON', 
+      message: err.message 
+    });
+  }
+  if (err.type === 'entity.too.large') {
+    logger.error('Body demasiado grande:', err.message);
+    return res.status(413).json({ 
+      error: 'Request too large', 
+      message: 'El tamaño de la petición excede el límite permitido' 
+    });
+  }
+  next(err);
+});
 
 // Morgan para logging de requests
 if (config.server.env === 'development') {

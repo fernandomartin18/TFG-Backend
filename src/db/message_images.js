@@ -6,7 +6,7 @@ import { query } from '../config/database.js';
 export const getImagesByMessageId = async (messageId) => {
   const result = await query(
     `SELECT id, message_id, original_filename, stored_filename, file_path, 
-            mime_type, file_size, image_order, created_at 
+            image_data, mime_type, file_size, image_order, created_at 
      FROM message_images 
      WHERE message_id = $1 
      ORDER BY image_order ASC`,
@@ -21,7 +21,7 @@ export const getImagesByMessageId = async (messageId) => {
 export const getImageById = async (imageId) => {
   const result = await query(
     `SELECT id, message_id, original_filename, stored_filename, file_path, 
-            mime_type, file_size, image_order, created_at 
+            image_data, mime_type, file_size, image_order, created_at 
      FROM message_images 
      WHERE id = $1`,
     [imageId]
@@ -37,17 +37,18 @@ export const createImage = async ({
   originalFilename,
   storedFilename,
   filePath,
+  imageData,
   mimeType,
   fileSize,
   imageOrder,
 }) => {
   const result = await query(
     `INSERT INTO message_images 
-     (message_id, original_filename, stored_filename, file_path, mime_type, file_size, image_order) 
-     VALUES ($1, $2, $3, $4, $5, $6, $7) 
+     (message_id, original_filename, stored_filename, file_path, image_data, mime_type, file_size, image_order) 
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
      RETURNING id, message_id, original_filename, stored_filename, file_path, 
-               mime_type, file_size, image_order, created_at`,
-    [messageId, originalFilename, storedFilename, filePath, mimeType, fileSize, imageOrder]
+               image_data, mime_type, file_size, image_order, created_at`,
+    [messageId, originalFilename, storedFilename, filePath, imageData, mimeType, fileSize, imageOrder]
   );
   return result.rows[0];
 };

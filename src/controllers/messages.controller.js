@@ -58,7 +58,7 @@ export const createMessage = async (req, res) => {
   try {
     const userId = req.user.userId;
     const chatId = parseInt(req.params.chatId);
-    const { role, content, modelsUsed } = req.body;
+    const { role, content, modelsUsed, images } = req.body;
 
     // Validar campos requeridos
     if (!role || !content) {
@@ -93,10 +93,27 @@ export const createMessage = async (req, res) => {
       modelsUsed: modelsUsed || [],
     });
 
+    // Guardar imágenes si se proporcionaron
+    if (images && Array.isArray(images) && images.length > 0) {
+      for (let i = 0; i < images.length; i++) {
+        const image = images[i];
+        await messageImages.createImage({
+          messageId: newMessage.id,
+          originalFilename: image.name || `image_${i + 1}`,
+          storedFilename: null,
+          filePath: null,
+          imageData: image.data,
+          mimeType: image.type || 'image/jpeg',
+          fileSize: image.size || 0,
+          imageOrder: i + 1,
+        });
+      }
+    }
+
     // Actualizar timestamp del chat
     await chats.touchChat(chatId);
 
-    logger.info(`Mensaje creado: ID ${newMessage.id} en chat ${chatId}`);
+    logger.info(`Mensaje creado: ID ${newMessage.id} en chat ${chatId} con ${images?.length || 0} imágenes`);
 
     res.status(201).json({
       message: 'Mensaje creado exitosamente',

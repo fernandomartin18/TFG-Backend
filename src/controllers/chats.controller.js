@@ -50,8 +50,8 @@ export const getChatById = async (req, res) => {
       });
     }
 
-    // Obtener mensajes del chat
-    const chatMessages = await messages.getMessagesByChatId(chatId);
+    // Obtener mensajes del chat con sus imágenes y códigos
+    const chatMessages = await messages.getMessagesWithDetails(chatId);
 
     res.json({
       chat: {
