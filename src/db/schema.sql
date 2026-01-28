@@ -22,12 +22,14 @@ CREATE TABLE IF NOT EXISTS chats (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   title VARCHAR(255) DEFAULT 'Nuevo Chat',
+  pinned BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_chats_user_id ON chats(user_id);
 CREATE INDEX IF NOT EXISTS idx_chats_updated_at ON chats(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chats_pinned ON chats(pinned);
 
 -- =====================================================
 -- TABLA: messages

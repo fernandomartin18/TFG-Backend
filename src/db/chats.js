@@ -5,10 +5,10 @@ import { query } from '../config/database.js';
  */
 export const getChatsByUserId = async (userId) => {
   const result = await query(
-    `SELECT id, user_id, title, created_at, updated_at 
+    `SELECT id, user_id, title, pinned, created_at, updated_at 
      FROM chats 
      WHERE user_id = $1 
-     ORDER BY updated_at DESC`,
+     ORDER BY pinned DESC, updated_at DESC`,
     [userId]
   );
   return result.rows;
@@ -19,7 +19,7 @@ export const getChatsByUserId = async (userId) => {
  */
 export const getChatById = async (chatId) => {
   const result = await query(
-    'SELECT id, user_id, title, created_at, updated_at FROM chats WHERE id = $1',
+    'SELECT id, user_id, title, pinned, created_at, updated_at FROM chats WHERE id = $1',
     [chatId]
   );
   return result.rows[0];
@@ -32,7 +32,7 @@ export const createChat = async (userId, title = 'Nuevo Chat') => {
   const result = await query(
     `INSERT INTO chats (user_id, title) 
      VALUES ($1, $2) 
-     RETURNING id, user_id, title, created_at, updated_at`,
+     RETURNING id, user_id, title, pinned, created_at, updated_at`,
     [userId, title]
   );
   return result.rows[0];
@@ -46,8 +46,22 @@ export const updateChatTitle = async (chatId, title) => {
     `UPDATE chats 
      SET title = $2, updated_at = CURRENT_TIMESTAMP 
      WHERE id = $1 
-     RETURNING id, user_id, title, created_at, updated_at`,
+     RETURNING id, user_id, title, pinned, created_at, updated_at`,
     [chatId, title]
+  );
+  return result.rows[0];
+};
+
+/**
+ * Actualizar el estado de fijado de un chat
+ */
+export const updateChatPinned = async (chatId, pinned) => {
+  const result = await query(
+    `UPDATE chats 
+     SET pinned = $2, updated_at = CURRENT_TIMESTAMP 
+     WHERE id = $1 
+     RETURNING id, user_id, title, pinned, created_at, updated_at`,
+    [chatId, pinned]
   );
   return result.rows[0];
 };

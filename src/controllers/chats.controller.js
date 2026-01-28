@@ -185,3 +185,53 @@ export const deleteChat = async (req, res) => {
     });
   }
 };
+
+/**
+ * Fijar o desfijar un chat
+ * PATCH /api/chats/:id/pin
+ */
+export const togglePinChat = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const chatId = parseInt(req.params.id);
+    const { pinned } = req.body;
+
+    if (typeof pinned !== 'boolean') {
+      return res.status(400).json({
+        error: 'Datos inválidos',
+        message: 'El campo pinned debe ser un booleano',
+      });
+    }
+
+    // Verificar que el chat pertenezca al usuario
+    const isOwner = await chats.verifyChatOwnership(chatId, userId);
+    if (!isOwner) {
+      return res.status(403).json({
+        error: 'Acceso denegado',
+        message: 'No tienes permiso para modificar este chat',
+      });
+    }
+
+    const updatedChat = await chats.updateChatPinned(chatId, pinned);
+
+    if (!updatedChat) {
+      return res.status(404).json({
+        error: 'Chat no encontrado',
+        message: 'El chat no existe',
+      });
+    }
+
+    logger.info(`Chat ${pinned ? 'fijado' : 'desfijado'}: ID ${chatId}`);
+
+    res.json({
+      message: `Chat ${pinned ? 'fijado' : 'desfijado'} exitosamente`,
+      chat: updatedChat,
+    });
+  } catch (error) {
+    logger.error('Error al fijar/desfijar chat:', error);
+    res.status(500).json({
+      error: 'Error al fijar/desfijar chat',
+      message: 'No se pudo actualizar el estado del chat',
+    });
+  }
+};

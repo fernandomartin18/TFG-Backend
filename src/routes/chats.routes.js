@@ -25,6 +25,13 @@ const updateChatValidation = [
     .withMessage('El título debe tener entre 1 y 255 caracteres'),
 ];
 
+const pinChatValidation = [
+  param('id').isInt().withMessage('ID de chat inválido'),
+  body('pinned')
+    .isBoolean()
+    .withMessage('El campo pinned debe ser un booleano'),
+];
+
 const chatIdValidation = [param('id').isInt().withMessage('ID de chat inválido')];
 
 // Rutas protegidas (requieren autenticación)
@@ -53,6 +60,12 @@ router.get('/:id', chatIdValidation, handleValidationErrors, chatsController.get
  * Actualizar el título de un chat
  */
 router.put('/:id', updateChatValidation, handleValidationErrors, chatsController.updateChat);
+
+/**
+ * PATCH /api/chats/:id/pin
+ * Fijar o desfijar un chat
+ */
+router.patch('/:id/pin', pinChatValidation, handleValidationErrors, chatsController.togglePinChat);
 
 /**
  * DELETE /api/chats/:id
