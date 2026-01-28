@@ -1,6 +1,5 @@
 import { query } from '../config/database.js';
 import * as messageImages from './message_images.js';
-import * as generatedCodes from './generated_codes.js';
 
 /**
  * Obtener todos los mensajes de un chat
@@ -83,7 +82,7 @@ export const countMessagesByChatId = async (chatId) => {
 };
 
 /**
- * Obtener mensajes con imágenes y códigos generados
+ * Obtener mensajes con imágenes
  */
 export const getMessagesWithDetails = async (chatId) => {
   const chatMessages = await getMessagesByChatId(chatId);
@@ -91,11 +90,9 @@ export const getMessagesWithDetails = async (chatId) => {
   const messagesWithDetails = await Promise.all(
     chatMessages.map(async (message) => {
       const images = await messageImages.getImagesByMessageId(message.id);
-      const codes = await generatedCodes.getCodesByMessageId(message.id);
       return {
         ...message,
         images,
-        generatedCodes: codes,
       };
     })
   );

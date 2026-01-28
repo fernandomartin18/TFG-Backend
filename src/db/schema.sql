@@ -64,43 +64,6 @@ CREATE TABLE IF NOT EXISTS message_images (
 
 CREATE INDEX IF NOT EXISTS idx_message_images_message_id ON message_images(message_id);
 
--- =====================================================
--- TABLA: generated_codes
--- =====================================================
-CREATE TABLE IF NOT EXISTS generated_codes (
-  id SERIAL PRIMARY KEY,
-  message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
-  model_used VARCHAR(100) NOT NULL,
-  code_content TEXT NOT NULL,
-  language VARCHAR(50) NOT NULL,
-  filename VARCHAR(255) NOT NULL,
-  file_path VARCHAR(500) NOT NULL,
-  file_size INTEGER NOT NULL,
-  is_zip BOOLEAN DEFAULT FALSE,
-  code_order INTEGER NOT NULL,
-  download_count INTEGER DEFAULT 0,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_generated_codes_message_id ON generated_codes(message_id);
-CREATE INDEX IF NOT EXISTS idx_generated_codes_language ON generated_codes(language);
-
--- =====================================================
--- TABLA: zip_contents
--- =====================================================
-CREATE TABLE IF NOT EXISTS zip_contents (
-  id SERIAL PRIMARY KEY,
-  generated_code_id INTEGER NOT NULL REFERENCES generated_codes(id) ON DELETE CASCADE,
-  filename VARCHAR(255) NOT NULL,
-  file_path_in_zip VARCHAR(500) NOT NULL,
-  language VARCHAR(50),
-  content TEXT,
-  file_size INTEGER,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_zip_contents_generated_code_id ON zip_contents(generated_code_id);
-
 
 -- =====================================================
 -- TRIGGERS
