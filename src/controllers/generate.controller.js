@@ -13,7 +13,7 @@ export class GenerateController {
   async generate(req, res) {
     try {
       const { model, prompt } = req.body;
-      const image = req.file;
+      const images = req.files || [];
 
       // Validación de campos requeridos
       if (!model || !prompt) {
@@ -22,31 +22,40 @@ export class GenerateController {
         });
       }
 
-      // Validación de imagen si se proporciona
-      if (image) {
-        // Verificar tipo MIME
-        if (!config.upload.allowedMimeTypes.includes(image.mimetype)) {
+      // Validación de imágenes si se proporcionan
+      if (images.length > 0) {
+        // Verificar límite de imágenes
+        if (images.length > 5) {
           return res.status(400).json({
-            error: `Tipo de imagen no permitido. Tipos aceptados: ${config.upload.allowedMimeTypes.join(', ')}`,
+            error: 'Máximo 5 imágenes permitidas',
           });
         }
 
-        // Verificar tamaño
-        if (image.size > config.upload.maxSize) {
-          return res.status(400).json({
-            error: `Imagen demasiado grande. Tamaño máximo: ${config.upload.maxSize / 1024 / 1024}MB`,
-          });
+        // Validar cada imagen
+        for (const image of images) {
+          // Verificar tipo MIME
+          if (!config.upload.allowedMimeTypes.includes(image.mimetype)) {
+            return res.status(400).json({
+              error: `Tipo de imagen no permitido: ${image.mimetype}. Tipos aceptados: ${config.upload.allowedMimeTypes.join(', ')}`,
+            });
+          }
+
+          // Verificar tamaño
+          if (image.size > config.upload.maxSize) {
+            return res.status(400).json({
+              error: `Imagen demasiado grande: ${image.originalname}. Tamaño máximo: ${config.upload.maxSize / 1024 / 1024}MB`,
+            });
+          }
         }
 
-        logger.info(`Generating with image: ${image.originalname}, size: ${image.size} bytes, type: ${image.mimetype}`);
+        logger.info(`Generating with ${images.length} images`);
       }
 
       // Llamar al servicio
       const result = await ollamaService.generateCode(
         model,
         prompt,
-        image?.buffer,
-        image?.mimetype
+        images
       );
 
       res.json(result);
@@ -54,6 +63,104 @@ export class GenerateController {
       logger.error('Error in generate controller:', error);
       res.status(error.status || 500).json({
         error: error.message || 'Error al generar código',
+        type: error.type,
+        details: error.details,
+      });
+    }
+  }
+
+  /**
+   * Genera código con streaming a partir de un prompt y opcionalmente una imagen
+   * POST /api/generate/stream
+   */
+  async generateStream(req, res) {
+    try {
+      const { model, prompt, messages, autoMode } = req.body;
+      const images = req.files || [];
+
+      // Validación de campos requeridos
+      if (!model || !prompt) {
+        return res.status(400).json({
+          error: 'Los campos "model" y "prompt" son requeridos',
+        });
+      }
+
+      // Parsear el historial de mensajes si viene como string
+      let messageHistory = [];
+      if (messages) {
+        try {
+          messageHistory = typeof messages === 'string' ? JSON.parse(messages) : messages;
+        } catch (e) {
+          logger.error('Error parsing messages:', e);
+        }
+      }
+      
+      // Detectar si es modo automático
+      const isAutoMode = autoMode === 'true';
+
+      // Validación de imágenes si se proporcionan
+      if (images.length > 0) {
+        // Verificar límite de imágenes
+        if (images.length > 5) {
+          return res.status(400).json({
+            error: 'Máximo 5 imágenes permitidas',
+          });
+        }
+
+        // Validar cada imagen
+        for (const image of images) {
+          // Verificar tipo MIME
+          if (!config.upload.allowedMimeTypes.includes(image.mimetype)) {
+            return res.status(400).json({
+              error: `Tipo de imagen no permitido: ${image.mimetype}. Tipos aceptados: ${config.upload.allowedMimeTypes.join(', ')}`,
+            });
+          }
+
+          // Verificar tamaño
+          if (image.size > config.upload.maxSize) {
+            return res.status(400).json({
+              error: `Imagen demasiado grande: ${image.originalname}. Tamaño máximo: ${config.upload.maxSize / 1024 / 1024}MB`,
+            });
+          }
+        }
+
+        logger.info(`Starting streaming with ${images.length} images`);
+      }
+
+      // Configurar headers para SSE
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      // Llamar al servicio con streaming
+      const stream = await ollamaService.generateCodeStream(
+        model,
+        prompt,
+        images,
+        messageHistory,
+        isAutoMode
+      );
+
+      // Pipe del stream de FastAPI al cliente
+      stream.pipe(res);
+
+      // Manejar errores en el stream
+      stream.on('error', (error) => {
+        logger.error('Error in stream:', error);
+        res.write(`data: [ERROR] ${error.message}\n\n`);
+        res.end();
+      });
+
+      // Cleanup cuando el cliente cierra la conexión
+      req.on('close', () => {
+        logger.info('Client closed connection');
+        stream.destroy();
+      });
+
+    } catch (error) {
+      logger.error('Error in generateStream controller:', error);
+      res.status(error.status || 500).json({
+        error: error.message || 'Error al generar código en streaming',
         type: error.type,
         details: error.details,
       });

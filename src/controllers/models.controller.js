@@ -48,6 +48,24 @@ export class ModelsController {
       });
     }
   }
+
+  /**
+   * Obtiene los modelos seleccionados automáticamente
+   * GET /api/models/auto-select
+   */
+  async getAutoSelectedModels(req, res) {
+    try {
+      const models = await ollamaService.getAutoSelectedModels();
+      res.json(models);
+    } catch (error) {
+      logger.error('Error in getAutoSelectedModels controller:', error);
+      res.status(error.status || 500).json({
+        error: error.message || 'Error al seleccionar modelos automáticamente',
+        type: error.type,
+        details: error.details,
+      });
+    }
+  }
 }
 
 export const modelsController = new ModelsController();
