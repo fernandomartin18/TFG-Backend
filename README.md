@@ -402,7 +402,7 @@ curl -X GET http://localhost:3000/api/auth/profile \
 
 ### 🔒 Flujo de Autenticación
 
-1. **Login/Registro** → Recibe `accessToken` (15 min) y `refreshToken` (7 días)
+1. **Login/Registro** → Recibe `accessToken` y `refreshToken`
 2. **Requests autenticados** → Incluir header: `Authorization: Bearer <accessToken>`
 3. **Token expirado** → Usar `/api/auth/refresh` con `refreshToken`
 4. **Recibir nuevos tokens** → Continuar usando el servicio
@@ -1105,8 +1105,6 @@ ollama run gemma3:27b "test"
 ## 📄 Licencia
 
 Este proyecto es parte de un Trabajo de Fin de Grado de la Universidad de Castilla La Mancha.
-
----
 
 ## 📧 Contacto
 
