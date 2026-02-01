@@ -39,7 +39,8 @@ CREATE TABLE IF NOT EXISTS messages (
   chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
   role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
   content TEXT NOT NULL,
-  models_used TEXT[], -- Array de modelos LLM usados
+  is_error BOOLEAN DEFAULT FALSE,
+  is_collapsible BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -53,8 +54,6 @@ CREATE TABLE IF NOT EXISTS message_images (
   id SERIAL PRIMARY KEY,
   message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
   original_filename VARCHAR(255) NOT NULL,
-  stored_filename VARCHAR(255),
-  file_path VARCHAR(500),
   image_data TEXT,
   mime_type VARCHAR(50) NOT NULL,
   file_size INTEGER NOT NULL,

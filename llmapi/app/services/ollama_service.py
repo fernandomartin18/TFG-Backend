@@ -399,7 +399,7 @@ No diagram"""
         # Si hay tantos "No diagram" como imágenes, significa que ninguna es un diagrama UML
         if no_diagram_count >= len(image_bytes_list) and len(image_bytes_list) > 0:
             logger.warning(f"All {len(image_bytes_list)} images were identified as non-UML diagrams")
-            raise ValueError("Las imágenes proporcionadas no se corresponden con diagramas UML.")
+            raise ValueError("No se ha detectado ningún diagrama UML")
         
         return content
         
@@ -528,7 +528,7 @@ No diagram""",
         resp = requests.post(OLLAMA_CHAT_URL, json=payload, stream=True, timeout=OLLAMA_TIMEOUT)
         resp.raise_for_status()
         
-        # Stream del paso 1
+        # Primero recopilar todo el contenido sin hacer stream
         for line in resp.iter_lines():
             if line:
                 try:
@@ -538,18 +538,20 @@ No diagram""",
                         content = chunk["message"]["content"]
                         if content:
                             plantuml_content += content
-                            yield content
                 except json.JSONDecodeError:
                     logger.warning(f"Could not decode line: {line}")
                     continue
         
         logger.info(f"PlantUML extraction completed, response length: {len(plantuml_content)}")
         
-        # Verificar si todas las imágenes resultaron en "No diagram"
+        # Verificar si todas las imágenes resultaron en "No diagram" ANTES de enviar nada
         no_diagram_count = plantuml_content.lower().count("no diagram")
         if no_diagram_count >= len(image_bytes_list) and len(image_bytes_list) > 0:
             logger.warning(f"All {len(image_bytes_list)} images were identified as non-UML diagrams")
-            raise ValueError("Las imágenes proporcionadas no se corresponden con diagramas UML")
+            raise ValueError("No se ha detectado ningún diagrama UML")
+        
+        # Si pasó la validación, ahora sí enviar el contenido
+        yield plantuml_content
         
         # Enviar evento de fin del paso 1 e inicio del paso 2
         yield "[STEP1_END]"

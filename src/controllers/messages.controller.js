@@ -55,7 +55,7 @@ export const createMessage = async (req, res) => {
   try {
     const userId = req.user.userId;
     const chatId = parseInt(req.params.chatId);
-    const { role, content, modelsUsed, images } = req.body;
+    const { role, content, isError, isCollapsible, images } = req.body;
 
     // Validar campos requeridos
     if (!role || !content) {
@@ -87,7 +87,8 @@ export const createMessage = async (req, res) => {
       chatId,
       role,
       content,
-      modelsUsed: modelsUsed || [],
+      isError: isError || false,
+      isCollapsible: isCollapsible || false,
     });
 
     // Guardar imágenes si se proporcionaron
@@ -97,8 +98,6 @@ export const createMessage = async (req, res) => {
         await messageImages.createImage({
           messageId: newMessage.id,
           originalFilename: image.name || `image_${i + 1}`,
-          storedFilename: null,
-          filePath: null,
           imageData: image.data,
           mimeType: image.type || 'image/jpeg',
           fileSize: image.size || 0,
