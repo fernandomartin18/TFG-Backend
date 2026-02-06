@@ -1059,7 +1059,7 @@ ollama run gemma3:27b "test"
    - Mejorar la calidad de la imagen
    - Aumentar el contraste del diagrama
    - Usar formato PNG en lugar de JPG
-4. Para texto sin imágenes, desactiva el modo automático y usa directamente `qwen2.5-coder:14b`
+4. Para texto sin imágenes, desactiva el modo automático y usa directamente. `qwen2.5-coder:14b`
 
 ---
 
