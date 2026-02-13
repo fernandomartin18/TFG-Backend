@@ -37,6 +37,9 @@ logs/
 dist/
 build/
 
+# Test coverage
+coverage/
+
 # Uploads (temporal)
 uploads/
 temp/
