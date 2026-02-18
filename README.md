@@ -70,6 +70,7 @@ backend/
 │   │   ├── users.routes.js      # Rutas de usuarios
 │   │   ├── chats.routes.js      # Rutas de chats
 │   │   ├── messages.routes.js   # Rutas de mensajes
+│   │   ├── projects.routes.js   # Rutas de proyectos
 │   │   ├── models.routes.js     # Rutas de modelos Ollama
 │   │   └── generate.routes.js   # Rutas de generación IA
 │   ├── controllers/
@@ -77,6 +78,7 @@ backend/
 │   │   ├── users.controller.js      # Lógica de usuarios
 │   │   ├── chats.controller.js      # Lógica de chats
 │   │   ├── messages.controller.js   # Lógica de mensajes
+│   │   ├── projects.controller.js   # Lógica de proyectos
 │   │   ├── models.controller.js     # Lógica de modelos
 │   │   └── generate.controller.js   # Lógica de generación
 │   ├── services/
@@ -93,6 +95,7 @@ backend/
 │   │   ├── chats.js             # Operaciones de chats
 │   │   ├── messages.js          # Operaciones de mensajes
 │   │   ├── message_images.js    # Operaciones de imágenes
+│   │   ├── projects.js          # Operaciones de proyectos
 │   │   ├── generated_codes.js   # Operaciones de código generado
 │   │   ├── schema.sql           # Schema de la base de datos
 │   │   └── README.md            # Documentación de BD
@@ -135,6 +138,7 @@ Punto de entrada para el frontend. Se encarga de:
 - **Autenticación JWT** (Access Token + Refresh Token)
 - **Gestión de usuarios** y perfiles
 - **Historial de chats** y mensajes persistentes
+- **Organización de chats en proyectos**
 - Validación inicial y manejo de archivos (hasta 5 imágenes)
 - Proxy a FastAPI para procesamiento de IA
 - Conexión con **PostgreSQL** para almacenamiento
@@ -438,9 +442,18 @@ users
 ├── created_at
 └── updated_at
 
+projects
+├── id (PRIMARY KEY)
+├── user_id (FK → users, CASCADE)
+├── name (VARCHAR 255)
+├── is_expanded (BOOLEAN, default TRUE)
+├── created_at
+└── updated_at
+
 chats
 ├── id (PRIMARY KEY)
 ├── user_id (FK → users, CASCADE)
+├── project_id (FK → projects, SET NULL)
 ├── title (VARCHAR 255, default 'Nuevo Chat')
 ├── pinned (BOOLEAN, default FALSE)
 ├── created_at
@@ -468,9 +481,11 @@ message_images
 
 **Notas importantes:**
 - Las relaciones usan `ON DELETE CASCADE` para eliminar datos relacionados automáticamente
+- Los proyectos permiten organizar chats en carpetas expandibles
+- `project_id` en chats usa `ON DELETE SET NULL` para que los chats se mantengan al eliminar un proyecto
 - `image_order` permite hasta 5 imágenes por mensaje
 - `image_data` almacena las imágenes en formato base64
-- `pinned` permite marcar chats como favoritos
+- `pinned` permite marcar chats como favoritos (solo disponible para chats sin proyecto)
 - `is_error` y `is_collapsible` controlan la visualización de mensajes especiales
 
 ---
@@ -538,6 +553,31 @@ Obtener todos los mensajes de un chat.
 
 #### POST /api/messages 🔒
 Crear un nuevo mensaje en un chat.
+
+---
+
+### 📁 Proyectos
+
+#### GET /api/projects 🔒
+Obtener todos los proyectos del usuario autenticado con sus chats.
+
+#### POST /api/projects 🔒
+Crear un nuevo proyecto.
+
+#### PUT /api/projects/:projectId 🔒
+Actualizar el nombre de un proyecto.
+
+#### PATCH /api/projects/:projectId/toggle-expand 🔒
+Alternar estado expandido/colapsado de un proyecto.
+
+#### DELETE /api/projects/:projectId 🔒
+Eliminar un proyecto. Los chats asociados permanecen pero vuelven a la lista general.
+
+#### POST /api/projects/add-chat 🔒
+Agregar un chat existente a un proyecto.
+
+#### DELETE /api/projects/remove-chat/:chatId 🔒
+Quitar un chat de su proyecto actual.
 
 ---
 
