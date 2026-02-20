@@ -39,6 +39,9 @@ build/
 
 # Test coverage
 coverage/
+llmapi/coverage.xml
+llmapi/.coverage
+**/.pytest_cache/
 
 # Uploads (temporal)
 uploads/

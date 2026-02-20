@@ -24,8 +24,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Run tests with coverage
+      - name: Run JS tests with coverage
         run: npm run test:coverage
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: pip install -r llmapi/requirements.txt
+
+      - name: Run Python tests with coverage
+        run: |
+          cd llmapi
+          pytest --cov=app --cov-report=xml:coverage.xml
       
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6

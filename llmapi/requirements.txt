@@ -5,3 +5,8 @@ python-multipart
 pillow
 pydantic
 python-dotenv
+
+# Testing
+pytest
+pytest-cov
+httpx
