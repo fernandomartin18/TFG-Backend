@@ -6,12 +6,12 @@ export const config = {
   // FastAPI Backend
   fastapi: {
     url: process.env.FASTAPI_URL || 'http://localhost:8001',
-    timeout: parseInt(process.env.REQUEST_TIMEOUT) || 600000,
+    timeout: Number.parseInt(process.env.REQUEST_TIMEOUT) || 600000,
   },
 
   // Server
   server: {
-    port: parseInt(process.env.PORT) || 3000,
+    port: Number.parseInt(process.env.PORT) || 3000,
     host: process.env.HOST || '0.0.0.0',
     env: process.env.NODE_ENV || 'development',
   },
@@ -23,7 +23,7 @@ export const config = {
 
   // Upload
   upload: {
-    maxSize: parseInt(process.env.MAX_FILE_SIZE) || 10485760, // 10MB
+    maxSize: Number.parseInt(process.env.MAX_FILE_SIZE) || 10485760, // 10MB
     allowedMimeTypes: ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'],
   },
 
@@ -35,13 +35,13 @@ export const config = {
   // Database
   database: {
     host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT) || 5432,
+    port: Number.parseInt(process.env.DB_PORT) || 5432,
     database: process.env.DB_NAME || 'tfg_app',
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || '',
-    max: parseInt(process.env.DB_MAX_CONNECTIONS) || 20,
-    idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT) || 30000,
-    connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT) || 2000,
+    max: Number.parseInt(process.env.DB_MAX_CONNECTIONS) || 20,
+    idleTimeoutMillis: Number.parseInt(process.env.DB_IDLE_TIMEOUT) || 30000,
+    connectionTimeoutMillis: Number.parseInt(process.env.DB_CONNECTION_TIMEOUT) || 2000,
   },
 
   // JWT

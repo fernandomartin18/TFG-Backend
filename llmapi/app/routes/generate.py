@@ -45,7 +45,7 @@ async def generate(
         ollama_resp = generate_with_image(
             model=model, 
             prompt=prompt, 
-            image_bytes=image_bytes
+            image_bytes_list=[image_bytes] if image_bytes else None
         )
 
         # Extract content from Ollama response

@@ -31,7 +31,7 @@ export const getUserChats = async (req, res) => {
 export const getChatById = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const chatId = parseInt(req.params.id);
+    const chatId = Number.parseInt(req.params.id);
 
     // Verificar que el chat pertenezca al usuario
     const isOwner = await chats.verifyChatOwnership(chatId, userId);
@@ -101,7 +101,7 @@ export const createChat = async (req, res) => {
 export const updateChat = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const chatId = parseInt(req.params.id);
+    const chatId = Number.parseInt(req.params.id);
     const { title } = req.body;
 
     if (!title || title.trim() === '') {
@@ -151,7 +151,7 @@ export const updateChat = async (req, res) => {
 export const deleteChat = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const chatId = parseInt(req.params.id);
+    const chatId = Number.parseInt(req.params.id);
 
     // Verificar que el chat pertenezca al usuario
     const isOwner = await chats.verifyChatOwnership(chatId, userId);
@@ -193,7 +193,7 @@ export const deleteChat = async (req, res) => {
 export const togglePinChat = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const chatId = parseInt(req.params.id);
+    const chatId = Number.parseInt(req.params.id);
     const { pinned } = req.body;
 
     if (typeof pinned !== 'boolean') {
