@@ -43,7 +43,6 @@ class OllamaService {
       formData.append('model', model);
       formData.append('prompt', prompt);
 
-      const safeModel = String(model).replaceAll(/[\n\r]/g, '_');
       if (images.length > 0) {
         images.forEach((image, index) => {
           formData.append('images', image.buffer, {
@@ -51,9 +50,9 @@ class OllamaService {
             contentType: image.mimetype,
           });
         });
-        logger.info(`Generating code with model: ${safeModel}, prompt length: ${prompt.length}, ${images.length} images`);
+        logger.info('Generating code with images');
       } else {
-        logger.info(`Generating code with model: ${safeModel}, prompt length: ${prompt.length}`);
+        logger.info('Generating code');
       }
 
       const response = await axios.post(`${this.baseURL}/generate/`, formData, {
@@ -94,7 +93,6 @@ class OllamaService {
         formData.append('messages', JSON.stringify(messageHistory));
       }
 
-      const safeModel = String(model).replaceAll(/[\n\r]/g, '_');
       if (images.length > 0) {
         images.forEach((image, index) => {
           formData.append('images', image.buffer, {
@@ -102,9 +100,9 @@ class OllamaService {
             contentType: image.mimetype,
           });
         });
-        logger.info(`Starting streaming generation with model: ${safeModel}, prompt length: ${prompt.length}, ${images.length} images, history: ${messageHistory.length} messages`);
+        logger.info('Starting streaming generation with images');
       } else {
-        logger.info(`Starting streaming generation with model: ${safeModel}, prompt length: ${prompt.length}, history: ${messageHistory.length} messages`);
+        logger.info('Starting streaming generation');
       }
 
       const response = await axios.post(`${this.baseURL}/generate/stream`, formData, {
@@ -130,17 +128,16 @@ class OllamaService {
    * @returns {Promise<Object>} Confirmación de descarga
    */
   async unloadModel(model) {
-    const safeModel = String(model).replaceAll(/[\n\r]/g, '_');
     try {
-      logger.info(`Unloading model: ${safeModel}`);
+      logger.info('Unloading model...');
       const response = await axios.post(`${this.baseURL}/models/unload`, 
         { model },
         { timeout: 30000 }
       );
-      logger.info(`Successfully unloaded model: ${safeModel}`);
+      logger.info('Successfully unloaded model');
       return response.data;
     } catch (error) {
-      logger.error(`Error unloading model ${safeModel}:`, error.message);
+      logger.error('Error unloading model:', error.message);
       throw this._handleError(error);
     }
   }
