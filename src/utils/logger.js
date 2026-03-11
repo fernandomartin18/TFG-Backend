@@ -20,7 +20,7 @@ class Logger {
       // Sanitizar todos los argumentos que sean texto para evitar Log Injection
       const safeArgs = args.map(arg => {
         if (typeof arg === 'string') {
-          return arg.replace(/[\r\n]/g, ''); // Elimina saltos de línea
+          return arg.replaceAll(/[\r\n]/g, ''); // Elimina saltos de línea
         }
         return arg;
       });
