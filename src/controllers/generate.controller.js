@@ -60,7 +60,7 @@ export class GenerateController {
 
       res.json(result);
     } catch (error) {
-      const sanitizedMsg = String(error?.message || error).replace(/[\r\n]+/g, ' ');
+      const sanitizedMsg = String(error?.message || error).replaceAll(/[\r\n]+/g, ' ');
       logger.error('Error in generate controller:', sanitizedMsg);
       res.status(error.status || 500).json({
         error: error.message || 'Error al generar código',
@@ -92,7 +92,7 @@ export class GenerateController {
         try {
           messageHistory = typeof messages === 'string' ? JSON.parse(messages) : messages;
         } catch (e) {
-          const sanitizedMsg = String(e?.message || e).replace(/[\r\n]+/g, ' ');
+          const sanitizedMsg = String(e?.message || e).replaceAll(/[\r\n]+/g, ' ');
           logger.error('Error parsing messages:', sanitizedMsg);
         }
       }
@@ -148,7 +148,7 @@ export class GenerateController {
 
       // Manejar errores en el stream
       stream.on('error', (error) => {
-        const sanitizedMsg = String(error?.message || error).replace(/[\r\n]+/g, ' ');
+        const sanitizedMsg = String(error?.message || error).replaceAll(/[\r\n]+/g, ' ');
         logger.error('Error in stream:', sanitizedMsg);
         res.write(`data: [ERROR] ${error.message}\n\n`);
         res.end();
@@ -161,7 +161,7 @@ export class GenerateController {
       });
 
     } catch (error) {
-      const sanitizedMsg = String(error?.message || error).replace(/[\r\n]+/g, ' ');
+      const sanitizedMsg = String(error?.message || error).replaceAll(/[\r\n]+/g, ' ');
       logger.error('Error in generateStream controller:', sanitizedMsg);
       res.status(error.status || 500).json({
         error: error.message || 'Error al generar código en streaming',
