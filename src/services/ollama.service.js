@@ -50,9 +50,9 @@ class OllamaService {
             contentType: image.mimetype,
           });
         });
-        logger.info(`Generating code with model: ${model}, prompt length: ${prompt.length}, ${images.length} images`);
+        logger.info('Generating code with images');
       } else {
-        logger.info(`Generating code with model: ${model}, prompt length: ${prompt.length}`);
+        logger.info('Generating code');
       }
 
       const response = await axios.post(`${this.baseURL}/generate/`, formData, {
@@ -100,9 +100,9 @@ class OllamaService {
             contentType: image.mimetype,
           });
         });
-        logger.info(`Starting streaming generation with model: ${model}, prompt length: ${prompt.length}, ${images.length} images, history: ${messageHistory.length} messages`);
+        logger.info('Starting streaming generation with images');
       } else {
-        logger.info(`Starting streaming generation with model: ${model}, prompt length: ${prompt.length}, history: ${messageHistory.length} messages`);
+        logger.info('Starting streaming generation');
       }
 
       const response = await axios.post(`${this.baseURL}/generate/stream`, formData, {
@@ -129,15 +129,15 @@ class OllamaService {
    */
   async unloadModel(model) {
     try {
-      logger.info(`Unloading model: ${model}`);
+      logger.info('Unloading model...');
       const response = await axios.post(`${this.baseURL}/models/unload`, 
         { model },
         { timeout: 30000 }
       );
-      logger.info(`Successfully unloaded model: ${model}`);
+      logger.info('Successfully unloaded model');
       return response.data;
     } catch (error) {
-      logger.error(`Error unloading model ${model}:`, error.message);
+      logger.error('Error unloading model:', error.message);
       throw this._handleError(error);
     }
   }

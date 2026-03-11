@@ -8,6 +8,7 @@ import routes from './routes/index.js';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware.js';
 
 const app = express();
+app.disable('x-powered-by');
 
 // Configurar nivel de logging
 logger.setLevel(config.logging.level);

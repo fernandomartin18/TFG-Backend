@@ -5,7 +5,7 @@ import { query } from '../config/database.js';
  */
 export const getChatsByUserId = async (userId) => {
   const result = await query(
-    `SELECT id, user_id, title, pinned, created_at, updated_at 
+    `SELECT id, user_id, project_id, title, pinned, created_at, updated_at 
      FROM chats 
      WHERE user_id = $1 
      ORDER BY pinned DESC, updated_at DESC`,
@@ -19,7 +19,7 @@ export const getChatsByUserId = async (userId) => {
  */
 export const getChatById = async (chatId) => {
   const result = await query(
-    'SELECT id, user_id, title, pinned, created_at, updated_at FROM chats WHERE id = $1',
+    'SELECT id, user_id, project_id, title, pinned, created_at, updated_at FROM chats WHERE id = $1',
     [chatId]
   );
   return result.rows[0];
@@ -98,3 +98,32 @@ export const verifyChatOwnership = async (chatId, userId) => {
   );
   return result.rows.length > 0;
 };
+
+/**
+ * Agregar un chat a un proyecto
+ */
+export const addChatToProject = async (chatId, projectId) => {
+  const result = await query(
+    `UPDATE chats 
+     SET project_id = $2, updated_at = CURRENT_TIMESTAMP 
+     WHERE id = $1 
+     RETURNING id, user_id, project_id, title, pinned, created_at, updated_at`,
+    [chatId, projectId]
+  );
+  return result.rows[0];
+};
+
+/**
+ * Quitar un chat de un proyecto
+ */
+export const removeChatFromProject = async (chatId) => {
+  const result = await query(
+    `UPDATE chats 
+     SET project_id = NULL, updated_at = CURRENT_TIMESTAMP 
+     WHERE id = $1 
+     RETURNING id, user_id, project_id, title, pinned, created_at, updated_at`,
+    [chatId]
+  );
+  return result.rows[0];
+};
+

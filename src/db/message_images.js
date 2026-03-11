@@ -5,7 +5,7 @@ import { query } from '../config/database.js';
  */
 export const getImagesByMessageId = async (messageId) => {
   const result = await query(
-    `SELECT id, message_id, original_filename, stored_filename, file_path, 
+    `SELECT id, message_id, original_filename, 
             image_data, mime_type, file_size, image_order, created_at 
      FROM message_images 
      WHERE message_id = $1 
@@ -20,7 +20,7 @@ export const getImagesByMessageId = async (messageId) => {
  */
 export const getImageById = async (imageId) => {
   const result = await query(
-    `SELECT id, message_id, original_filename, stored_filename, file_path, 
+    `SELECT id, message_id, original_filename, 
             image_data, mime_type, file_size, image_order, created_at 
      FROM message_images 
      WHERE id = $1`,
@@ -35,8 +35,6 @@ export const getImageById = async (imageId) => {
 export const createImage = async ({
   messageId,
   originalFilename,
-  storedFilename,
-  filePath,
   imageData,
   mimeType,
   fileSize,
@@ -44,11 +42,11 @@ export const createImage = async ({
 }) => {
   const result = await query(
     `INSERT INTO message_images 
-     (message_id, original_filename, stored_filename, file_path, image_data, mime_type, file_size, image_order) 
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-     RETURNING id, message_id, original_filename, stored_filename, file_path, 
+     (message_id, original_filename, image_data, mime_type, file_size, image_order) 
+     VALUES ($1, $2, $3, $4, $5, $6) 
+     RETURNING id, message_id, original_filename, 
                image_data, mime_type, file_size, image_order, created_at`,
-    [messageId, originalFilename, storedFilename, filePath, imageData, mimeType, fileSize, imageOrder]
+    [messageId, originalFilename, imageData, mimeType, fileSize, imageOrder]
   );
   return result.rows[0];
 };
@@ -58,7 +56,7 @@ export const createImage = async ({
  */
 export const deleteImage = async (imageId) => {
   const result = await query(
-    'DELETE FROM message_images WHERE id = $1 RETURNING id, file_path',
+    'DELETE FROM message_images WHERE id = $1 RETURNING id',
     [imageId]
   );
   return result.rows[0];
@@ -69,7 +67,7 @@ export const deleteImage = async (imageId) => {
  */
 export const deleteImagesByMessage = async (messageId) => {
   const result = await query(
-    'DELETE FROM message_images WHERE message_id = $1 RETURNING id, file_path',
+    'DELETE FROM message_images WHERE message_id = $1 RETURNING id',
     [messageId]
   );
   return result.rows;
@@ -83,5 +81,5 @@ export const countImagesByMessageId = async (messageId) => {
     'SELECT COUNT(*) as count FROM message_images WHERE message_id = $1',
     [messageId]
   );
-  return parseInt(result.rows[0].count);
+  return Number.parseInt(result.rows[0].count);
 };

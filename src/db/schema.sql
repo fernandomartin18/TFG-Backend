@@ -16,11 +16,26 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- =====================================================
+-- TABLA: projects
+-- =====================================================
+CREATE TABLE IF NOT EXISTS projects (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  is_expanded BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
+
+-- =====================================================
 -- TABLA: chats
 -- =====================================================
 CREATE TABLE IF NOT EXISTS chats (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  project_id INTEGER REFERENCES projects(id) ON DELETE SET NULL,
   title VARCHAR(255) DEFAULT 'Nuevo Chat',
   pinned BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -28,6 +43,7 @@ CREATE TABLE IF NOT EXISTS chats (
 );
 
 CREATE INDEX IF NOT EXISTS idx_chats_user_id ON chats(user_id);
+CREATE INDEX IF NOT EXISTS idx_chats_project_id ON chats(project_id);
 CREATE INDEX IF NOT EXISTS idx_chats_updated_at ON chats(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_chats_pinned ON chats(pinned);
 
@@ -39,7 +55,8 @@ CREATE TABLE IF NOT EXISTS messages (
   chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
   role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
   content TEXT NOT NULL,
-  models_used TEXT[], -- Array de modelos LLM usados
+  is_error BOOLEAN DEFAULT FALSE,
+  is_collapsible BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -53,8 +70,6 @@ CREATE TABLE IF NOT EXISTS message_images (
   id SERIAL PRIMARY KEY,
   message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
   original_filename VARCHAR(255) NOT NULL,
-  stored_filename VARCHAR(255),
-  file_path VARCHAR(500),
   image_data TEXT,
   mime_type VARCHAR(50) NOT NULL,
   file_size INTEGER NOT NULL,
@@ -81,5 +96,22 @@ $$ language 'plpgsql';
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON projects
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_chats_updated_at BEFORE UPDATE ON chats
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- =====================================================
+-- TABLA: templates
+-- =====================================================
+CREATE TABLE IF NOT EXISTS templates (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  prompt TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER update_templates_updated_at BEFORE UPDATE ON templates
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

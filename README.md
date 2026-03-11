@@ -1,6 +1,6 @@
-# Backend de la aplicación del TFG
+# Backend Genesis
 
-Backend de la aplicación que genera código híbrido a partir de **diagramas de clases** o **descripciones textuales** usando modelos de IA locales con Ollama.
+Backend de Genesis, la aplicación que genera código híbrido a partir de **diagramas** o **descripciones textuales** usando modelos de IA locales con Ollama.
 
 ## 📑 Índice
 
@@ -11,6 +11,8 @@ Backend de la aplicación que genera código híbrido a partir de **diagramas de
 - [📋 Requisitos Previos](#-requisitos-previos)
 - [🔐 Configuración de Variables de Entorno](#-configuración-de-variables-de-entorno)
 - [🚀 Instalación y Ejecución Local](#-instalación-y-ejecución-local)
+- [🔐 Sistema de Autenticación JWT](#-sistema-de-autenticación-jwt)
+- [💾 Base de Datos PostgreSQL](#-base-de-datos-postgresql)
 - [🧪 Endpoints Disponibles](#-endpoints-disponibles)
 - [🧰 Estructura de Respuesta de Ollama](#-estructura-de-respuesta-de-ollama)
 - [🔄 Flujo de Ejecución](#-flujo-de-ejecución)
@@ -60,24 +62,50 @@ backend/
 ├── src/                          # API Gateway (Express + Node.js)
 │   ├── server.js                # Punto de entrada del servidor Express
 │   ├── config/
-│   │   └── index.js             # Configuración centralizada
+│   │   ├── index.js             # Configuración centralizada
+│   │   └── database.js          # Pool de conexiones PostgreSQL
 │   ├── routes/
 │   │   ├── index.js             # Registro de rutas
-│   │   ├── models.routes.js     # Rutas de modelos
-│   │   └── generate.routes.js   # Rutas de generación
+│   │   ├── auth.routes.js       # Rutas de autenticación
+│   │   ├── users.routes.js      # Rutas de usuarios
+│   │   ├── chats.routes.js      # Rutas de chats
+│   │   ├── messages.routes.js   # Rutas de mensajes
+│   │   ├── projects.routes.js   # Rutas de proyectos
+│   │   ├── models.routes.js     # Rutas de modelos Ollama
+│   │   └── generate.routes.js   # Rutas de generación IA
 │   ├── controllers/
+│   │   ├── auth.controller.js       # Lógica de autenticación
+│   │   ├── users.controller.js      # Lógica de usuarios
+│   │   ├── chats.controller.js      # Lógica de chats
+│   │   ├── messages.controller.js   # Lógica de mensajes
+│   │   ├── projects.controller.js   # Lógica de proyectos
 │   │   ├── models.controller.js     # Lógica de modelos
 │   │   └── generate.controller.js   # Lógica de generación
 │   ├── services/
+│   │   ├── auth.service.js      # JWT y bcrypt
 │   │   └── ollama.service.js    # Cliente HTTP para FastAPI
 │   ├── middlewares/
-│   │   └── error.middleware.js  # Manejo de errores
+│   │   ├── auth.middleware.js       # Verificación JWT
+│   │   ├── validation.middleware.js # Manejo de validaciones
+│   │   ├── validators.js            # Reglas de validación
+│   │   └── error.middleware.js      # Manejo de errores
+│   ├── db/
+│   │   ├── index.js             # Exporta todos los módulos
+│   │   ├── users.js             # Operaciones de usuarios
+│   │   ├── chats.js             # Operaciones de chats
+│   │   ├── messages.js          # Operaciones de mensajes
+│   │   ├── message_images.js    # Operaciones de imágenes
+│   │   ├── projects.js          # Operaciones de proyectos
+│   │   ├── generated_codes.js   # Operaciones de código generado
+│   │   ├── schema.sql           # Schema de la base de datos
+│   │   └── README.md            # Documentación de BD
 │   └── utils/
 │       └── logger.js            # Sistema de logging
 ├── package.json
 ├── .env
 ├── .gitignore
 ├── README.md
+├── API_AUTH.md                   # Documentación de autenticación
 │
 └── llmapi/                       # Backend de IA (FastAPI + Python)
     ├── app/
@@ -107,9 +135,13 @@ backend/
 ### 🟢 Node.js API Gateway (Puerto 3000)
 Punto de entrada para el frontend. Se encarga de:
 - Recibir peticiones del frontend React
-- Validación inicial y manejo de archivos
+- **Autenticación JWT** (Access Token + Refresh Token)
+- **Gestión de usuarios** y perfiles
+- **Historial de chats** y mensajes persistentes
+- **Organización de chats en proyectos**
+- Validación inicial y manejo de archivos (hasta 5 imágenes)
 - Proxy a FastAPI para procesamiento de IA
-- Futuras features: autenticación, historial de chats, gestión de usuarios
+- Conexión con **PostgreSQL** para almacenamiento
 
 ### 🔵 FastAPI (Puerto 8001)
 Backend especializado en IA. Se encarga de:
@@ -147,10 +179,14 @@ Se encarga de comunicarse con **Ollama** (modelos locales de IA), procesar imá
 
 1. **Python 3.10+**
 2. **Pip** actualizado: `python -m pip install --upgrade pip`
-3. **Ollama** instalado y ejecutándose localmente
+3. **Node.js 18+** y **npm**
+4. **PostgreSQL 14+** instalado y ejecutándose
+   - Base de datos `tfg_app` creada
+   - Schema cargado desde `backend/src/db/schema.sql`
+5. **Ollama** instalado y ejecutándose localmente
    - 👉 [Descargar Ollama](https://ollama.ai)
    - Verificar instalación: `ollama --version`
-4. **Al menos un modelo descargado**
+6. **Al menos un modelo descargado** (ej: `ollama pull qwen2.5-coder:14b`)
 
 ## 🔐 Configuración de Variables de Entorno
 
@@ -172,6 +208,22 @@ MAX_FILE_SIZE=10485760  # 10MB en bytes
 
 # CORS Configuration (comma-separated)
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
+
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=tfg_app
+DB_USER=postgres
+DB_PASSWORD=tu_password
+DB_MAX_CONNECTIONS=20
+DB_IDLE_TIMEOUT=30000
+DB_CONNECTION_TIMEOUT=2000
+
+# JWT Configuration
+JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
+JWT_REFRESH_SECRET=your_super_secret_refresh_key_change_this_in_production
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
 
 # Logging
 LOG_LEVEL=info
@@ -296,11 +348,240 @@ uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 
 ---
 
+## 🔐 Sistema de Autenticación JWT
+
+El backend implementa un sistema completo de autenticación con **JSON Web Tokens (JWT)** que incluye:
+
+### ✨ Características
+
+- ✅ Registro e inicio de sesión de usuarios
+- ✅ **Access Token** y **Refresh Token**
+- ✅ Protección de rutas con middleware de autenticación
+- ✅ Gestión de perfil de usuario (username, email, avatar)
+- ✅ Cambio seguro de contraseña (requiere contraseña actual)
+- ✅ Contraseñas hasheadas con **bcrypt** (10 salt rounds)
+- ✅ Validación robusta con **express-validator**
+
+### 🔑 Endpoints de Autenticación
+
+| Método | Ruta | Descripción | Auth |
+|--------|------|-------------|------|
+| POST | `/api/auth/register` | Registro de nuevo usuario | ❌ |
+| POST | `/api/auth/login` | Inicio de sesión | ❌ |
+| POST | `/api/auth/refresh` | Renovar tokens | ❌ |
+| GET | `/api/auth/profile` | Obtener perfil del usuario | ✅ |
+| POST | `/api/auth/logout` | Cerrar sesión | ✅ |
+| PUT | `/api/users/me` | Actualizar datos de usuario | ✅ |
+| PUT | `/api/users/me/password` | Cambiar contraseña | ✅ |
+| DELETE | `/api/users/me` | Eliminar cuenta | ✅ |
+
+### 📝 Ejemplo de Uso
+
+**Registro:**
+```bash
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "johndoe",
+    "email": "john@example.com",
+    "password": "Password123"
+  }'
+```
+
+**Login:**
+```bash
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "johndoe",
+    "password": "Password123"
+  }'
+```
+
+**Usar token en requests:**
+```bash
+curl -X GET http://localhost:3000/api/auth/profile \
+  -H "Authorization: Bearer <tu_access_token>"
+```
+
+### 🔒 Flujo de Autenticación
+
+1. **Login/Registro** → Recibe `accessToken` y `refreshToken`
+2. **Requests autenticados** → Incluir header: `Authorization: Bearer <accessToken>`
+3. **Token expirado** → Usar `/api/auth/refresh` con `refreshToken`
+4. **Recibir nuevos tokens** → Continuar usando el servicio
+
+### 🛡️ Validaciones
+
+**Username:**
+- 3-50 caracteres
+
+**Email:**
+- Formato válido
+- Único en el sistema
+
+**Password:**
+- Mínimo 6 caracteres
+- Debe contener: mayúscula, minúscula y número
+
+---
+
+## 💾 Base de Datos PostgreSQL
+
+El sistema utiliza **PostgreSQL** para persistir toda la información de usuarios, chats, mensajes y código generado.
+
+### 📋 Schema Principal
+
+```sql
+users
+├── id (PRIMARY KEY)
+├── username (VARCHAR 50)
+├── email (UNIQUE, VARCHAR 100)
+├── password_hash (VARCHAR 255)
+├── avatar_url (TEXT)
+├── created_at
+└── updated_at
+
+projects
+├── id (PRIMARY KEY)
+├── user_id (FK → users, CASCADE)
+├── name (VARCHAR 255)
+├── is_expanded (BOOLEAN, default TRUE)
+├── created_at
+└── updated_at
+
+chats
+├── id (PRIMARY KEY)
+├── user_id (FK → users, CASCADE)
+├── project_id (FK → projects, SET NULL)
+├── title (VARCHAR 255, default 'Nuevo Chat')
+├── pinned (BOOLEAN, default FALSE)
+├── created_at
+└── updated_at
+
+messages
+├── id (PRIMARY KEY)
+├── chat_id (FK → chats, CASCADE)
+├── role (user/assistant)
+├── content (TEXT)
+├── is_error (BOOLEAN, default FALSE)
+├── is_collapsible (BOOLEAN, default FALSE)
+└── created_at
+
+message_images
+├── id (PRIMARY KEY)
+├── message_id (FK → messages, CASCADE)
+├── original_filename (VARCHAR 255)
+├── image_data (TEXT, base64)
+├── mime_type (VARCHAR 50)
+├── file_size (INTEGER)
+├── image_order (1-5)
+└── created_at
+```
+
+**Notas importantes:**
+- Las relaciones usan `ON DELETE CASCADE` para eliminar datos relacionados automáticamente
+- Los proyectos permiten organizar chats en carpetas expandibles
+- `project_id` en chats usa `ON DELETE SET NULL` para que los chats se mantengan al eliminar un proyecto
+- `image_order` permite hasta 5 imágenes por mensaje
+- `image_data` almacena las imágenes en formato base64
+- `pinned` permite marcar chats como favoritos (solo disponible para chats sin proyecto)
+- `is_error` y `is_collapsible` controlan la visualización de mensajes especiales
+
+---
+
+---
+
 ## 🧪 Endpoints disponibles
 
 ### 🌐 Node.js API Gateway (Puerto 3000)
 
 Todos los endpoints del frontend deben apuntar a `http://localhost:3000/api`
+
+> 🔒 **Nota:** Los endpoints marcados con 🔒 requieren autenticación. Incluye el header:  
+> `Authorization: Bearer <tu_access_token>`
+
+---
+
+### 🔐 Autenticación y Usuarios
+
+#### POST /api/auth/register
+Registro de nuevo usuario.
+
+#### POST /api/auth/login
+Inicio de sesión y obtención de tokens.
+
+#### POST /api/auth/refresh
+Renovación de tokens (access + refresh).
+
+#### GET /api/auth/profile 🔒
+Obtener perfil del usuario autenticado.
+
+#### POST /api/auth/logout 🔒
+Cerrar sesión del usuario autenticado.
+
+#### PUT /api/users/me 🔒
+Actualizar datos del usuario (username, email, avatar).
+
+#### PUT /api/users/me/password 🔒
+Cambiar contraseña del usuario.
+
+#### DELETE /api/users/me 🔒
+Eliminar cuenta del usuario.
+
+---
+
+### 💬 Chats y Mensajes
+
+#### GET /api/chats 🔒
+Obtener todos los chats del usuario autenticado.
+
+#### POST /api/chats 🔒
+Crear un nuevo chat.
+
+#### GET /api/chats/:chatId 🔒
+Obtener detalles de un chat específico.
+
+#### PUT /api/chats/:chatId 🔒
+Actualizar título de un chat.
+
+#### DELETE /api/chats/:chatId 🔒
+Eliminar un chat y todos sus mensajes.
+
+#### GET /api/chats/:chatId/messages 🔒
+Obtener todos los mensajes de un chat.
+
+#### POST /api/messages 🔒
+Crear un nuevo mensaje en un chat.
+
+---
+
+### 📁 Proyectos
+
+#### GET /api/projects 🔒
+Obtener todos los proyectos del usuario autenticado con sus chats.
+
+#### POST /api/projects 🔒
+Crear un nuevo proyecto.
+
+#### PUT /api/projects/:projectId 🔒
+Actualizar el nombre de un proyecto.
+
+#### PATCH /api/projects/:projectId/toggle-expand 🔒
+Alternar estado expandido/colapsado de un proyecto.
+
+#### DELETE /api/projects/:projectId 🔒
+Eliminar un proyecto. Los chats asociados permanecen pero vuelven a la lista general.
+
+#### POST /api/projects/add-chat 🔒
+Agregar un chat existente a un proyecto.
+
+#### DELETE /api/projects/remove-chat/:chatId 🔒
+Quitar un chat de su proyecto actual.
+
+---
+
+### 🤖 Generación de Código (Ollama)
 
 #### 🟢 GET /api/models
 
@@ -818,7 +1099,7 @@ ollama run gemma3:27b "test"
    - Mejorar la calidad de la imagen
    - Aumentar el contraste del diagrama
    - Usar formato PNG en lugar de JPG
-4. Para texto sin imágenes, desactiva el modo automático y usa directamente `qwen2.5-coder:14b`
+4. Para texto sin imágenes, desactiva el modo automático y usa directamente. `qwen2.5-coder:14b`
 
 ---
 
@@ -834,6 +1115,19 @@ ollama run gemma3:27b "test"
 
 ## 📊 Tecnologías Utilizadas
 
+### Node.js API Gateway
+- **Express.js** 4.18+ - Framework web para Node.js
+- **PostgreSQL** 14+ - Base de datos relacional
+- **pg** - Cliente PostgreSQL para Node.js
+- **bcrypt** - Hashing de contraseñas
+- **jsonwebtoken (JWT)** - Autenticación basada en tokens
+- **express-validator** - Validación de datos
+- **multer** - Manejo de archivos multipart
+- **cors** - Configuración de CORS
+- **dotenv** - Gestión de variables de entorno
+- **winston** - Sistema de logging
+
+### FastAPI Backend (IA)
 - **FastAPI** 0.100+ - Framework web moderno y rápido
 - **Pydantic** V2 - Validación de datos
 - **Uvicorn** - Servidor ASGI
@@ -841,16 +1135,21 @@ ollama run gemma3:27b "test"
 - **Requests** - Cliente HTTP
 - **Python-dotenv** - Gestión de variables de entorno
 - **Pillow** - Procesamiento de imágenes
+
+### Herramientas Externas
 - **Ollama** - Servidor de modelos de IA local
+- **PostgreSQL** - Base de datos relacional
 
 ---
 
 ## 📄 Licencia
 
-Hacer más adelante
-
----
+Este proyecto es parte de un Trabajo de Fin de Grado de la Universidad de Castilla La Mancha.
 
 ## 📧 Contacto
 
 - 📧 fernandomm1840@gmail.com
+
+---
+
+**Desarrollado por**: Fernando Martín

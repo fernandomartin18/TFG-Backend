@@ -10,7 +10,7 @@ import { logger } from '../utils/logger.js';
 export const getMessagesByChatId = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const chatId = parseInt(req.params.chatId);
+    const chatId = Number.parseInt(req.params.chatId);
 
     // Verificar que el chat pertenezca al usuario
     const isOwner = await chats.verifyChatOwnership(chatId, userId);
@@ -54,8 +54,8 @@ export const getMessagesByChatId = async (req, res) => {
 export const createMessage = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const chatId = parseInt(req.params.chatId);
-    const { role, content, modelsUsed, images } = req.body;
+    const chatId = Number.parseInt(req.params.chatId);
+    const { role, content, isError, isCollapsible, images } = req.body;
 
     // Validar campos requeridos
     if (!role || !content) {
@@ -87,7 +87,8 @@ export const createMessage = async (req, res) => {
       chatId,
       role,
       content,
-      modelsUsed: modelsUsed || [],
+      isError: isError || false,
+      isCollapsible: isCollapsible || false,
     });
 
     // Guardar imágenes si se proporcionaron
@@ -97,8 +98,6 @@ export const createMessage = async (req, res) => {
         await messageImages.createImage({
           messageId: newMessage.id,
           originalFilename: image.name || `image_${i + 1}`,
-          storedFilename: null,
-          filePath: null,
           imageData: image.data,
           mimeType: image.type || 'image/jpeg',
           fileSize: image.size || 0,
@@ -132,7 +131,7 @@ export const createMessage = async (req, res) => {
 export const getMessageById = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const messageId = parseInt(req.params.id);
+    const messageId = Number.parseInt(req.params.id);
 
     const message = await messages.getMessageById(messageId);
 
@@ -179,7 +178,7 @@ export const getMessageById = async (req, res) => {
 export const deleteMessage = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const messageId = parseInt(req.params.id);
+    const messageId = Number.parseInt(req.params.id);
 
     const message = await messages.getMessageById(messageId);
 

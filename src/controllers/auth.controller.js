@@ -36,7 +36,7 @@ export const register = async (req, res) => {
     // Generar tokens
     const tokens = generateTokens(newUser);
 
-    logger.info(`Usuario registrado: ${username} (ID: ${newUser.id})`);
+    logger.info(`Usuario registrado (ID: ${newUser.id})`);
 
     res.status(201).json({
       message: 'Usuario registrado exitosamente',

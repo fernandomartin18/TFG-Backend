@@ -6,7 +6,7 @@ import * as messageImages from './message_images.js';
  */
 export const getMessagesByChatId = async (chatId) => {
   const result = await query(
-    `SELECT id, chat_id, role, content, models_used, created_at 
+    `SELECT id, chat_id, role, content, is_error, is_collapsible, created_at 
      FROM messages 
      WHERE chat_id = $1 
      ORDER BY created_at ASC`,
@@ -20,7 +20,7 @@ export const getMessagesByChatId = async (chatId) => {
  */
 export const getMessageById = async (messageId) => {
   const result = await query(
-    'SELECT id, chat_id, role, content, models_used, created_at FROM messages WHERE id = $1',
+    'SELECT id, chat_id, role, content, is_error, is_collapsible, created_at FROM messages WHERE id = $1',
     [messageId]
   );
   return result.rows[0];
@@ -29,12 +29,12 @@ export const getMessageById = async (messageId) => {
 /**
  * Crear un nuevo mensaje
  */
-export const createMessage = async ({ chatId, role, content, modelsUsed = [] }) => {
+export const createMessage = async ({ chatId, role, content, isError = false, isCollapsible = false }) => {
   const result = await query(
-    `INSERT INTO messages (chat_id, role, content, models_used) 
-     VALUES ($1, $2, $3, $4) 
-     RETURNING id, chat_id, role, content, models_used, created_at`,
-    [chatId, role, content, modelsUsed]
+    `INSERT INTO messages (chat_id, role, content, is_error, is_collapsible) 
+     VALUES ($1, $2, $3, $4, $5) 
+     RETURNING id, chat_id, role, content, is_error, is_collapsible, created_at`,
+    [chatId, role, content, isError, isCollapsible]
   );
   return result.rows[0];
 };
@@ -60,7 +60,7 @@ export const deleteMessagesByChat = async (chatId) => {
  */
 export const getLastMessageByChatId = async (chatId) => {
   const result = await query(
-    `SELECT id, chat_id, role, content, models_used, created_at 
+    `SELECT id, chat_id, role, content, is_error, is_collapsible, created_at 
      FROM messages 
      WHERE chat_id = $1 
      ORDER BY created_at DESC 
@@ -78,7 +78,7 @@ export const countMessagesByChatId = async (chatId) => {
     'SELECT COUNT(*) as count FROM messages WHERE chat_id = $1',
     [chatId]
   );
-  return parseInt(result.rows[0].count);
+  return Number.parseInt(result.rows[0].count);
 };
 
 /**
