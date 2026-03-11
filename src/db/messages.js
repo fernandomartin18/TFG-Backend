@@ -78,7 +78,7 @@ export const countMessagesByChatId = async (chatId) => {
     'SELECT COUNT(*) as count FROM messages WHERE chat_id = $1',
     [chatId]
   );
-  return parseInt(result.rows[0].count);
+  return Number.parseInt(result.rows[0].count);
 };
 
 /**

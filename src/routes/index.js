@@ -7,6 +7,7 @@ import generateRoutes from './generate.routes.js';
 import chatsRoutes from './chats.routes.js';
 import messagesRoutes from './messages.routes.js';
 import projectsRoutes from './projects.routes.js';
+import templatesRoutes from './templates.routes.js';
 
 const router = express.Router();
 
@@ -44,6 +45,11 @@ router.use('/chats', chatsRoutes);
  * Rutas de proyectos
  */
 router.use('/projects', projectsRoutes);
+
+/**
+ * Rutas de plantillas
+ */
+router.use('/templates', templatesRoutes);
 
 /**
  * Rutas de mensajes (incluye rutas anidadas en chats)

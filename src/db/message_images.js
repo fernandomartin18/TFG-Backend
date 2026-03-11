@@ -81,5 +81,5 @@ export const countImagesByMessageId = async (messageId) => {
     'SELECT COUNT(*) as count FROM message_images WHERE message_id = $1',
     [messageId]
   );
-  return parseInt(result.rows[0].count);
+  return Number.parseInt(result.rows[0].count);
 };
