@@ -99,6 +99,7 @@ export class GenerateController {
       
       // Detectar si es modo automático
       const isAutoMode = autoMode === 'true';
+      const { visionModel, codingModel } = req.body;
 
       // Validación de imágenes si se proporcionan
       if (images.length > 0) {
@@ -140,7 +141,9 @@ export class GenerateController {
         prompt,
         images,
         messageHistory,
-        isAutoMode
+        isAutoMode,
+        visionModel,
+        codingModel
       );
 
       // Pipe del stream de FastAPI al cliente

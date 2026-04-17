@@ -120,7 +120,9 @@ async def generate_stream(
     prompt: str = Form(..., description="Texto del prompt"),
     messages: Optional[str] = Form(None, description="Historial de mensajes en formato JSON"),
     images: Optional[List[UploadFile]] = File(None, description="Archivos de imagen opcionales (hasta 5)"),
-    auto_mode: Optional[str] = Form("false", description="Si está en modo automático")
+    auto_mode: Optional[str] = Form("false", description="Si está en modo automático"),
+    vision_model: Optional[str] = Form(None, description="Modelo de visión a usar en modo automático"),
+    coding_model: Optional[str] = Form(None, description="Modelo de generación a usar en modo automático")
 ):
     """
     Genera texto en streaming, mostrando la respuesta a medida que se genera.
@@ -185,7 +187,9 @@ async def generate_stream(
                         for chunk in generate_with_image_stream_auto(
                             prompt=prompt,
                             image_bytes_list=image_bytes_list,
-                            message_history=message_history
+                            message_history=message_history,
+                            vision_model_override=vision_model,
+                            coding_model_override=coding_model
                         ):
                             # Codificar en JSON para preservar caracteres especiales y saltos de línea
                             yield f"data: {json.dumps(chunk)}\n\n"

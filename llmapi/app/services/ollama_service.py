@@ -429,7 +429,9 @@ def replace_image_references(prompt: str) -> str:
 def generate_with_image_stream_auto(
     prompt: str,
     image_bytes_list: List[bytes],
-    message_history: Optional[list] = None
+    message_history: Optional[list] = None,
+    vision_model_override: Optional[str] = None,
+    coding_model_override: Optional[str] = None
 ):
     """
     Genera una respuesta en modo automático con dos pasos:
@@ -446,9 +448,13 @@ def generate_with_image_stream_auto(
     """
     try:
         # Seleccionar los mejores modelos disponibles
-        best_models = select_best_models()
-        vision_model = best_models["vision_model"]
-        coding_model = best_models["coding_model"]
+        if vision_model_override and coding_model_override:
+            vision_model = vision_model_override
+            coding_model = coding_model_override
+        else:
+            best_models = select_best_models()
+            vision_model = best_models["vision_model"]
+            coding_model = best_models["coding_model"]
         
         logger.info(f"Auto mode using: vision={vision_model}, coding={coding_model}")
         
