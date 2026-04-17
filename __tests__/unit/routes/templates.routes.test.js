@@ -24,6 +24,7 @@ describe('Templates Routes', () => {
 
   beforeAll(() => {
     app = express();
+    app.use(express.json());
     app.use('/api/templates', templatesRoutes);
   });
 
@@ -38,5 +39,37 @@ describe('Templates Routes', () => {
     expect(templatesController.getTemplates).toHaveBeenCalledTimes(1);
     expect(response.status).toBe(200);
     expect(response.body).toEqual([{ id: 1, name: 'Template 1' }]);
+  });
+
+  it('POST /api/templates debería llamar a createTemplate', async () => {
+    const newTemplate = { name: 'New Template' };
+    const response = await request(app)
+      .post('/api/templates')
+      .send(newTemplate);
+    
+    expect(authMiddleware.authenticate).toHaveBeenCalledTimes(1);
+    expect(templatesController.createTemplate).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual({ id: 2 });
+  });
+
+  it('PUT /api/templates/:id debería llamar a updateTemplate', async () => {
+    const updateData = { name: 'Updated Template' };
+    const response = await request(app)
+      .put('/api/templates/2')
+      .send(updateData);
+    
+    expect(authMiddleware.authenticate).toHaveBeenCalledTimes(1);
+    expect(templatesController.updateTemplate).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ id: 2 });
+  });
+
+  it('DELETE /api/templates/:id debería llamar a deleteTemplate', async () => {
+    const response = await request(app).delete('/api/templates/2');
+    
+    expect(authMiddleware.authenticate).toHaveBeenCalledTimes(1);
+    expect(templatesController.deleteTemplate).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(204);
   });
 });

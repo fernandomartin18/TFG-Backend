@@ -17,25 +17,26 @@ class Logger {
       const timestamp = new Date().toISOString();
       const prefix = `[${timestamp}] [${level.toUpperCase()}]`;
       
-      // Sanitizar todos los argumentos que sean texto para evitar Log Injection
+      // Sanitizar todos los argumentos para evitar Log Injection
       const safeArgs = args.map(arg => {
-        if (typeof arg === 'string') {
-          // Reemplaza saltos de línea y caracteres de control comunes en inyecciones de logs
-          return arg.replaceAll(/[\r\n\t\f]/g, '').replaceAll(/[^\x20-\x7E]/g, '?');
-        }
-        if (arg && typeof arg === 'object') {
-          // Para objetos, podemos serializarlos brevemente y aplicar la misma sanitización
-          try {
-            const str = JSON.stringify(arg);
-            return str.replaceAll(/[\r\n\t\f]/g, '').replaceAll(/[^\x20-\x7E]/g, '?');
-          } catch (e) {
-            return `[Objeto no serializable: ${e.message}]`;
+        let str;
+        try {
+          if (arg instanceof Error) {
+            str = arg.stack || arg.message;
+          } else if (typeof arg === 'object') {
+            str = JSON.stringify(arg);
+          } else {
+            str = String(arg);
           }
+        } catch (e) {
+          str = `[Objeto no serializable: ${e.message}]`;
         }
-        return arg;
+        
+        // Reemplaza saltos de línea y caracteres de control comunes
+        return str ? str.replace(/[\r\n]/g, '').replace(/[^\x20-\x7E]/g, '?') : '';
       });
 
-      console.log(prefix, ...safeArgs);
+      console.log(prefix, ...safeArgs); // NOSONAR - La sanitización se realiza en el bloque superior
     }
   }
 
