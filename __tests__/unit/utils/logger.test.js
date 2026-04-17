@@ -57,6 +57,6 @@ describe('Logger Utility', () => {
     expect(consoleSpy).toHaveBeenCalledTimes(1);
     expect(consoleSpy.mock.calls[0][1]).toBe('Message');
     expect(consoleSpy.mock.calls[0][2]).toEqual('{"key":"value"}');
-    expect(consoleSpy.mock.calls[0][3]).toBe(123);
+    expect(consoleSpy.mock.calls[0][3]).toBe('123'); // Ahora aseguramos que se transforman a strings seguros
   });
 });
