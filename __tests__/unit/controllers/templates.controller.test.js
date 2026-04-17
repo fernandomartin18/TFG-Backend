@@ -1,7 +1,8 @@
 import { jest } from '@jest/globals';
 
 jest.unstable_mockModule('../../../src/db/templates.js', () => ({
-  getAll: jest.fn(),
+  getAllForUser: jest.fn(),
+  getPublicTemplates: jest.fn(),
 }));
 
 jest.unstable_mockModule('../../../src/utils/logger.js', () => ({
@@ -33,12 +34,9 @@ describe('Templates Controller', () => {
   });
 
   describe('getTemplates', () => {
-    it('debería obtener y devolver todas las plantillas correctamente', async () => {
-      const mockTemplates = [
-        { id: 1, name: 'Template 1', description: 'Desc 1', prompt: 'Prompt 1' },
-        { id: 2, name: 'Template 2', description: 'Desc 2', prompt: 'Prompt 2' },
-      ];
-      templatesDb.getAll.mockResolvedValue(mockTemplates);
+    it('debería obtener y devolver las plantillas públicas si no hay usuario', async () => {
+      const mockTemplates = [{ id: 1, title: 'Public Template' }];
+      templatesDb.getPublicTemplates.mockResolvedValue(mockTemplates);
 
       const req = mockReq();
       const res = mockRes();
@@ -46,14 +44,30 @@ describe('Templates Controller', () => {
 
       await getTemplates(req, res, next);
 
-      expect(templatesDb.getAll).toHaveBeenCalledTimes(1);
+      expect(templatesDb.getPublicTemplates).toHaveBeenCalledTimes(1);
       expect(res.json).toHaveBeenCalledWith(mockTemplates);
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('debería manejar errores y pasarlos al middleware be error (next)', async () => {
+    it('debería obtener plantillas completas si hay usuario en req', async () => {
+      const mockTemplates = [{ id: 1, title: 'User Template' }];
+      templatesDb.getAllForUser.mockResolvedValue(mockTemplates);
+
+      const req = mockReq();
+      req.user = { userId: 42 };
+      const res = mockRes();
+      const next = mockNext();
+
+      await getTemplates(req, res, next);
+
+      expect(templatesDb.getAllForUser).toHaveBeenCalledWith(42);
+      expect(res.json).toHaveBeenCalledWith(mockTemplates);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('debería manejar errores y pasarlos al middleware de error (next)', async () => {
       const dbError = new Error('Database Error');
-      templatesDb.getAll.mockRejectedValue(dbError);
+      templatesDb.getPublicTemplates.mockRejectedValue(dbError);
 
       const req = mockReq();
       const res = mockRes();
@@ -61,7 +75,7 @@ describe('Templates Controller', () => {
 
       await getTemplates(req, res, next);
 
-      expect(templatesDb.getAll).toHaveBeenCalledTimes(1);
+      expect(templatesDb.getPublicTemplates).toHaveBeenCalledTimes(1);
       expect(logger.error).toHaveBeenCalledWith('Error al obtener plantillas:', dbError);
       expect(res.json).not.toHaveBeenCalled();
       expect(next).toHaveBeenCalledWith(dbError);
