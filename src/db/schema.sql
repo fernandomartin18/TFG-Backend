@@ -107,6 +107,7 @@ CREATE TRIGGER update_chats_updated_at BEFORE UPDATE ON chats
 -- =====================================================
 CREATE TABLE IF NOT EXISTS templates (
   id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   prompt TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -119,9 +120,9 @@ CREATE TRIGGER update_templates_updated_at BEFORE UPDATE ON templates
 -- =====================================================
 -- DATOS POR DEFECTO (SEMILLAS)
 -- =====================================================
-INSERT INTO templates (title, prompt) VALUES
-('Código Híbrido desde Imagen', 'Analiza el diagrama de clases de la imagen adjunta y genera los códigos en Python y Qiskit necesarios para implementarlo. Indica antes de enviar cada código el paquete al que pertenece en texto si es que hay paquetes. Ten en cuenta que es un sistema híbrido que contiene tanto clases clásicas como componentes cuánticos. Por favor, sé riguroso y profesional, aplicando buenas prácticas de ingeniería de software y tipado.'),
-('Código Clásico desde Imagen', 'Analiza el diagrama de clases de la imagen adjunta y extrae la estructura mostrada para generar los códigos necesarios en [INDICAR LENGUAJE]. Implementa correctamente las clases, métodos, y las relaciones orientadas a objetos (herencia, composición, etc.) que se aprecien visualmente y, antes de enviar cada código, indica en texto el paquete al que pertenece si es que los hay.'),
-('Código Cuántico (Qiskit)', E'Diseña un circuito cuántico utilizando Qiskit en Python para resolver:\n\n[DESCRIBE EL PROBLEMA O ALGORITMO QUANTUM AQUÍ]\n\nPor favor, incluye comentarios explicando cada compuerta (gates), el proceso de medición, y cómo ejecutarlo usando un simulador de Aer.'),
-('Código a partir de PlantUML', E'A partir del siguiente diseño en formato PlantUML, genera los códigos equivalentes en [INDICAR LENGUAJE]. Asegúrate de incluir la definición completa de las clases, atributos, métodos y la correcta implementación de las relaciones orientadas a objetos (herencia, composición, agregación, etc.). Antes de enviar cada código, asegúrate de indicar el paquete al que pertenece en texto si es que hay paquetes:\n\n[PEGA TU PLANTUML AQUÍ]'),
-('Optimización de Código', E'Analiza el siguiente código y sugiere optimizaciones de rendimiento y mejoras siguiendo principios SOLID y de buenas prácticas de código limpio:\n\n[PEGA TU CÓDIGO AQUÍ]');
+INSERT INTO templates (user_id, title, prompt) VALUES
+(NULL, 'Código Híbrido desde Imagen', 'Analiza el diagrama de clases de la imagen adjunta y genera los códigos en Python y Qiskit necesarios para implementarlo. Indica antes de enviar cada código el paquete al que pertenece en texto si es que hay paquetes. Ten en cuenta que es un sistema híbrido que contiene tanto clases clásicas como componentes cuánticos. Por favor, sé riguroso y profesional, aplicando buenas prácticas de ingeniería de software y tipado.'),
+(NULL, 'Código Clásico desde Imagen', 'Analiza el diagrama de clases de la imagen adjunta y extrae la estructura mostrada para generar los códigos necesarios en [INDICAR LENGUAJE]. Implementa correctamente las clases, métodos, y las relaciones orientadas a objetos (herencia, composición, etc.) que se aprecien visualmente y, antes de enviar cada código, indica en texto el paquete al que pertenece si es que los hay.'),
+(NULL, 'Código Cuántico (Qiskit)', E'Diseña un circuito cuántico utilizando Qiskit en Python para resolver:\n\n[DESCRIBE EL PROBLEMA O ALGORITMO QUANTUM AQUÍ]\n\nPor favor, incluye comentarios explicando cada compuerta (gates), el proceso de medición, y cómo ejecutarlo usando un simulador de Aer.'),
+(NULL, 'Código a partir de PlantUML', E'A partir del siguiente diseño en formato PlantUML, genera los códigos equivalentes en [INDICAR LENGUAJE]. Asegúrate de incluir la definición completa de las clases, atributos, métodos y la correcta implementación de las relaciones orientadas a objetos (herencia, composición, agregación, etc.). Antes de enviar cada código, asegúrate de indicar el paquete al que pertenece en texto si es que hay paquetes:\n\n[PEGA TU PLANTUML AQUÍ]'),
+(NULL, 'Optimización de Código', E'Analiza el siguiente código y sugiere optimizaciones de rendimiento y mejoras siguiendo principios SOLID y de buenas prácticas de código limpio:\n\n[PEGA TU CÓDIGO AQUÍ]');

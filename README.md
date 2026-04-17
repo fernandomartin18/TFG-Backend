@@ -71,6 +71,7 @@ backend/
 │   │   ├── chats.routes.js      # Rutas de chats
 │   │   ├── messages.routes.js   # Rutas de mensajes
 │   │   ├── projects.routes.js   # Rutas de proyectos
+│   │   ├── templates.routes.js  # Rutas de plantillas
 │   │   ├── models.routes.js     # Rutas de modelos Ollama
 │   │   └── generate.routes.js   # Rutas de generación IA
 │   ├── controllers/
@@ -79,6 +80,7 @@ backend/
 │   │   ├── chats.controller.js      # Lógica de chats
 │   │   ├── messages.controller.js   # Lógica de mensajes
 │   │   ├── projects.controller.js   # Lógica de proyectos
+│   │   ├── templates.controller.js  # Lógica de plantillas
 │   │   ├── models.controller.js     # Lógica de modelos
 │   │   └── generate.controller.js   # Lógica de generación
 │   ├── services/
@@ -96,6 +98,7 @@ backend/
 │   │   ├── messages.js          # Operaciones de mensajes
 │   │   ├── message_images.js    # Operaciones de imágenes
 │   │   ├── projects.js          # Operaciones de proyectos
+│   │   ├── templates.js         # Operaciones de plantillas
 │   │   ├── generated_codes.js   # Operaciones de código generado
 │   │   ├── schema.sql           # Schema de la base de datos
 │   │   └── README.md            # Documentación de BD
@@ -477,6 +480,14 @@ message_images
 ├── file_size (INTEGER)
 ├── image_order (1-5)
 └── created_at
+
+templates
+├── id (PRIMARY KEY)
+├── user_id (FK → users, CASCADE)
+├── title (VARCHAR 255)
+├── prompt (TEXT)
+├── created_at
+└── updated_at
 ```
 
 **Notas importantes:**
@@ -578,6 +589,22 @@ Agregar un chat existente a un proyecto.
 
 #### DELETE /api/projects/remove-chat/:chatId 🔒
 Quitar un chat de su proyecto actual.
+
+---
+
+### 📝 Plantillas (Templates)
+
+#### GET /api/templates 🔒 (Opcional)
+Obtener todas las plantillas (públicas del sistema y las creadas por el usuario si está autenticado).
+
+#### POST /api/templates 🔒
+Crear una nueva plantilla personalizada.
+
+#### PUT /api/templates/:id 🔒
+Actualizar una plantilla existente (solo el autor o admin).
+
+#### DELETE /api/templates/:id 🔒
+Eliminar una plantilla (solo el autor o admin).
 
 ---
 
