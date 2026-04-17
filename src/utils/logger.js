@@ -29,7 +29,7 @@ class Logger {
             const str = JSON.stringify(arg);
             return str.replaceAll(/[\r\n\t\f]/g, '').replaceAll(/[^\x20-\x7E]/g, '?');
           } catch (e) {
-            return '[Objeto no serializable]';
+            return `[Objeto no serializable: ${e.message}]`;
           }
         }
         return arg;
