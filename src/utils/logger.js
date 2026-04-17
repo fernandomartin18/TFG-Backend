@@ -33,7 +33,7 @@ class Logger {
         }
         
         // Reemplaza saltos de línea y caracteres de control comunes
-        return str ? str.replace(/[\r\n]/g, '').replace(/[^\x20-\x7E]/g, '?') : '';
+        return str ? str.replaceAll(/[\r\n]/g, '').replaceAll(/[^\x20-\x7E]/g, '?') : '';
       });
 
       console.log(prefix, ...safeArgs); // NOSONAR - La sanitización se realiza en el bloque superior
