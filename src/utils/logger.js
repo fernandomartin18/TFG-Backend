@@ -20,7 +20,17 @@ class Logger {
       // Sanitizar todos los argumentos que sean texto para evitar Log Injection
       const safeArgs = args.map(arg => {
         if (typeof arg === 'string') {
-          return arg.replaceAll(/[\r\n]/g, ''); // Elimina saltos de línea
+          // Reemplaza saltos de línea y caracteres de control comunes en inyecciones de logs
+          return arg.replaceAll(/[\r\n\t\f]/g, '').replaceAll(/[^\x20-\x7E]/g, '?');
+        }
+        if (arg && typeof arg === 'object') {
+          // Para objetos, podemos serializarlos brevemente y aplicar la misma sanitización
+          try {
+            const str = JSON.stringify(arg);
+            return str.replaceAll(/[\r\n\t\f]/g, '').replaceAll(/[^\x20-\x7E]/g, '?');
+          } catch (e) {
+            return '[Objeto no serializable]';
+          }
         }
         return arg;
       });
