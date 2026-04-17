@@ -72,6 +72,7 @@ backend/
 │   │   ├── messages.routes.js   # Rutas de mensajes
 │   │   ├── projects.routes.js   # Rutas de proyectos
 │   │   ├── templates.routes.js  # Rutas de plantillas
+│   │   ├── plantuml.routes.js   # Rutas de plantillas PlantUML
 │   │   ├── models.routes.js     # Rutas de modelos Ollama
 │   │   └── generate.routes.js   # Rutas de generación IA
 │   ├── controllers/
@@ -81,6 +82,7 @@ backend/
 │   │   ├── messages.controller.js   # Lógica de mensajes
 │   │   ├── projects.controller.js   # Lógica de proyectos
 │   │   ├── templates.controller.js  # Lógica de plantillas
+│   │   ├── plantuml.controller.js   # Lógica de plantillas PlantUML
 │   │   ├── models.controller.js     # Lógica de modelos
 │   │   └── generate.controller.js   # Lógica de generación
 │   ├── services/
@@ -99,6 +101,7 @@ backend/
 │   │   ├── message_images.js    # Operaciones de imágenes
 │   │   ├── projects.js          # Operaciones de proyectos
 │   │   ├── templates.js         # Operaciones de plantillas
+│   │   ├── plantuml.js          # Operaciones de plantillas PlantUML
 │   │   ├── generated_codes.js   # Operaciones de código generado
 │   │   ├── schema.sql           # Schema de la base de datos
 │   │   └── README.md            # Documentación de BD
@@ -488,6 +491,14 @@ templates
 ├── prompt (TEXT)
 ├── created_at
 └── updated_at
+
+plantuml_templates
+├── id (PRIMARY KEY)
+├── user_id (FK → users, CASCADE)
+├── title (VARCHAR 255)
+├── code (TEXT)
+├── created_at
+└── updated_at
 ```
 
 **Notas importantes:**
@@ -605,6 +616,22 @@ Actualizar una plantilla existente (solo el autor o admin).
 
 #### DELETE /api/templates/:id 🔒
 Eliminar una plantilla (solo el autor o admin).
+
+---
+
+### 📊 Plantillas PlantUML
+
+#### GET /api/plantuml-templates 🔒 (Opcional)
+Obtener todas las plantillas de diagramas PlantUML (públicas del sistema y las creadas por el usuario si está autenticado).
+
+#### POST /api/plantuml-templates 🔒
+Crear una nueva plantilla PlantUML personalizada.
+
+#### PUT /api/plantuml-templates/:id 🔒
+Actualizar el título y/o código de una plantilla PlantUML existente.
+
+#### DELETE /api/plantuml-templates/:id 🔒
+Eliminar una plantilla PlantUML personalizada.
 
 ---
 

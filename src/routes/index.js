@@ -8,6 +8,7 @@ import chatsRoutes from './chats.routes.js';
 import messagesRoutes from './messages.routes.js';
 import projectsRoutes from './projects.routes.js';
 import templatesRoutes from './templates.routes.js';
+import plantUmlRoutes from './plantuml.routes.js';
 
 const router = express.Router();
 
@@ -50,6 +51,11 @@ router.use('/projects', projectsRoutes);
  * Rutas de plantillas
  */
 router.use('/templates', templatesRoutes);
+
+/**
+ * Rutas de plantillas PlantUML
+ */
+router.use('/plantuml-templates', plantUmlRoutes);
 
 /**
  * Rutas de mensajes (incluye rutas anidadas en chats)
