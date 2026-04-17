@@ -107,6 +107,7 @@ CREATE TRIGGER update_chats_updated_at BEFORE UPDATE ON chats
 -- =====================================================
 CREATE TABLE IF NOT EXISTS templates (
   id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   prompt TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -115,3 +116,286 @@ CREATE TABLE IF NOT EXISTS templates (
 
 CREATE TRIGGER update_templates_updated_at BEFORE UPDATE ON templates
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- =====================================================
+-- DATOS POR DEFECTO (SEMILLAS)
+-- =====================================================
+INSERT INTO templates (user_id, title, prompt) VALUES
+(NULL, 'Código Híbrido desde Imagen', 'Analiza el diagrama de clases de la imagen adjunta y genera los códigos en Python y Qiskit necesarios para implementarlo. Indica antes de enviar cada código el paquete al que pertenece en texto si es que hay paquetes. Ten en cuenta que es un sistema híbrido que contiene tanto clases clásicas como componentes cuánticos. Por favor, sé riguroso y profesional, aplicando buenas prácticas de ingeniería de software y tipado.'),
+(NULL, 'Código Clásico desde Imagen', 'Analiza el diagrama de clases de la imagen adjunta y extrae la estructura mostrada para generar los códigos necesarios en [INDICAR LENGUAJE]. Implementa correctamente las clases, métodos, y las relaciones orientadas a objetos (herencia, composición, etc.) que se aprecien visualmente y, antes de enviar cada código, indica en texto el paquete al que pertenece si es que los hay.'),
+(NULL, 'Código Cuántico (Qiskit)', E'Diseña un circuito cuántico utilizando Qiskit en Python para resolver:\n\n[DESCRIBE EL PROBLEMA O ALGORITMO QUANTUM AQUÍ]\n\nPor favor, incluye comentarios explicando cada compuerta (gates), el proceso de medición, y cómo ejecutarlo usando un simulador de Aer.'),
+(NULL, 'Código a partir de PlantUML', E'A partir del siguiente diseño en formato PlantUML, genera los códigos equivalentes en [INDICAR LENGUAJE]. Asegúrate de incluir la definición completa de las clases, atributos, métodos y la correcta implementación de las relaciones orientadas a objetos (herencia, composición, agregación, etc.). Antes de enviar cada código, asegúrate de indicar el paquete al que pertenece en texto si es que hay paquetes:\n\n[PEGA TU PLANTUML AQUÍ]'),
+(NULL, 'Optimización de Código', E'Analiza el siguiente código y sugiere optimizaciones de rendimiento y mejoras siguiendo principios SOLID y de buenas prácticas de código limpio:\n\n[PEGA TU CÓDIGO AQUÍ]');
+
+-- =====================================================
+-- TABLA: plantuml_templates
+-- =====================================================
+CREATE TABLE IF NOT EXISTS plantuml_templates (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  code TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER update_plantuml_templates_updated_at BEFORE UPDATE ON plantuml_templates
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- =====================================================
+-- DATOS POR DEFECTO (SEMILLAS PLANTUML)
+-- =====================================================
+INSERT INTO plantuml_templates (user_id, title, code) VALUES
+(NULL, 'Arquitectura Híbrida', $$@startuml
+!theme plain
+' Mostrar íconos estándar de visibilidad (+, -, #)
+skinparam classAttributeIconSize 0
+
+title Diagrama de Clases: Arquitectura Híbrida (Clásico-Cuántica)
+
+' --- Dominio Clásico (Front-end / Controlador) ---
+package "Dominio Clásico" {
+    
+    class "ClassicalAppController" <<Classical>> {
+        - quantumService: IQuantumOptimizationService
+        + runOptimization(): ResultDTO
+    }
+
+    interface "IQuantumOptimizationService" <<Classical Interface>> {
+        + solve(problem: ProblemParams): ResultData
+    }
+
+    class "QuantumOptimizationService" <<Classical Service>> {
+        - quantumBackend: IQuantumBackend
+        - classicalOptimizer: IClassicalOptimizer
+        + solve(problem: ProblemParams): ResultData
+    }
+
+    class "ResultDTO" <<Classical DTO>> {
+        + solution: Map<String, Double>
+        + objectiveValue: double
+    }
+
+    class "ProblemParams" <<Classical DTO>> {
+        + constraint Matrix: double[][]
+        + penaltyFactor: double
+    }
+
+    interface "IClassicalOptimizer" <<Classical Interface>> {
+        + optimize(parameters: double[]): double[]
+    }
+
+    class "GradientDescentOptimizer" <<Classical Service>> {
+        + optimize(parameters: double[]): double[]
+    }
+}
+
+
+' --- Interfaz de Comunicación Clásico-Cuántica (Quantum SDK) ---
+package "Abstracción Cuántica (Interoperabilidad)" {
+    
+    interface "IQuantumBackend" <<Classical Interface>> {
+        + prepareCircuit(data: ProblemParams): CircuitDefinition
+        + execute(circuit: CircuitDefinition, params: double[]): QuantumResult
+    }
+
+    class "CircuitDefinition" <<Classical DTO>> {
+        + numQubits: int
+        + gates: List<GateOperation>
+    }
+
+    class "QuantumResult" <<Classical DTO>> {
+        + countMap: Map<String, int>
+        + shots: int
+    }
+}
+
+
+' --- Dominio Cuántico (Back-end / Circuito) ---
+package "Dominio Cuántico" {
+    
+    class "VariationalQuantumCircuit" <<Quantum>> {
+        - parameters: double[]
+        - registers: QubitRegister
+        + run(): QuantumResult
+    }
+
+    class "QubitRegister" <<Quantum>> {
+        - numQubits: int
+        + getState(): QuantumState
+    }
+
+    enum "GateOperation" <<Quantum Enum>> {
+        RX
+        RY
+        RZ
+        CNOT
+    }
+
+    ' Stereotipos específicos para el dominio cuántico
+    annotation "Entangled" <<Entangled Qubits>> {
+    }
+}
+
+
+' --- Relaciones y Flujos ---
+
+' Capa Clásica
+ClassicalAppController --> IQuantumOptimizationService : "Inyecta"
+ClassicalAppController ..> ResultDTO : "Retorna"
+
+QuantumOptimizationService ..|> IQuantumOptimizationService : "Implementa"
+QuantumOptimizationService --> IQuantumBackend : "Inyecta"
+QuantumOptimizationService --> IClassicalOptimizer : "Usa para variacional"
+QuantumOptimizationService ..> ProblemParams : "Usa para preparacion"
+
+GradientDescentOptimizer ..|> IClassicalOptimizer : "Implementa"
+
+' Capa de Interoperabilidad
+IQuantumBackend ..> CircuitDefinition : "Define"
+IQuantumBackend ..> QuantumResult : "Retorna"
+
+' Capa Cuántica
+VariationalQuantumCircuit --> CircuitDefinition : "Basado en"
+VariationalQuantumCircuit *-- QubitRegister : "Opera sobre"
+QubitRegister ..> GateOperation : "Usa"
+
+' Relación entre dominios (puente)
+QuantumOptimizationService ..> VariationalQuantumCircuit : "Instancia para el Backend"
+QuantumOptimizationService ..> QuantumResult : "Convierte resultados"
+
+@enduml$$),
+(NULL, 'Arquitectura de 3 Capas', $$@startuml
+!theme plain
+' Mostrar íconos estándar de visibilidad (+, -, #)
+skinparam classAttributeIconSize 0
+
+title Diagrama de Clases: Arquitectura de 3 Capas
+
+package "Capa de Presentación" {
+    class UserController {
+        - userService: IUserService
+        + getUser(id: int): UserDTO
+        + createUser(dto: UserDTO): void
+    }
+    class UserDTO <<DTO>> {
+        + id: int
+        + name: String
+    }
+}
+
+package "Capa de Negocio" {
+    interface IUserService <<Interface>> {
+        + getUser(id: int): User
+        + createUser(user: User): void
+    }
+    class UserService {
+        - userRepository: IUserRepository
+        + getUser(id: int): User
+        + createUser(user: User): void
+    }
+    class User <<Entity>> {
+        - id: int
+        - name: String
+        - email: String
+        + isValid(): boolean
+    }
+}
+
+package "Capa de Datos" {
+    interface IUserRepository <<Interface>> {
+        + findById(id: int): User
+        + save(user: User): void
+    }
+    class UserRepositoryImpl {
+        - dbConnection: Connection
+        + findById(id: int): User
+        + save(user: User): void
+    }
+}
+
+' Relaciones de Inyección de Dependencias y Uso
+UserController --> IUserService : "Inyecta"
+UserController ..> UserDTO : "Usa"
+
+UserService ..|> IUserService : "Implementa"
+UserService --> IUserRepository : "Inyecta"
+UserService ..> User : "Gestiona"
+
+UserRepositoryImpl ..|> IUserRepository : "Implementa"
+UserRepositoryImpl ..> User : "Instancia"
+
+@enduml$$),
+(NULL, 'Microservicios', $$@startuml
+!theme plain
+skinparam classAttributeIconSize 0
+
+title Diagrama de Clases: Dominio de un Microservicio
+
+package "Bounded Context: Order Service" {
+    
+    ' Capa de entrada (API / Controladores)
+    class OrderController <<REST API>> {
+        - orderService: OrderService
+        + createOrder(request: OrderRequestDTO): ResponseEntity
+    }
+    class OrderRequestDTO <<DTO>> {
+        + customerId: String
+        + items: List<String>
+    }
+
+    ' Lógica de Dominio
+    class OrderService <<Service>> {
+        - repository: OrderRepository
+        - eventPublisher: EventPublisher
+        + processOrder(dto: OrderRequestDTO): void
+    }
+    class Order <<Aggregate Root>> {
+        - orderId: String
+        - status: OrderStatus
+        - totalAmount: double
+        + calculateTotal(): void
+        + markAsPaid(): void
+    }
+    enum OrderStatus <<Enum>> {
+        PENDING
+        PAID
+        SHIPPED
+    }
+
+    ' Persistencia
+    interface OrderRepository <<Repository>> {
+        + save(order: Order): void
+        + findById(id: String): Order
+    }
+
+    ' Comunicación Hacia Afuera (Mensajería)
+    interface EventPublisher <<Interface>> {
+        + publish(event: DomainEvent): void
+    }
+    class OrderCreatedEvent <<Event>> {
+        + eventId: String
+        + orderId: String
+        + timestamp: Date
+    }
+
+    ' --- Relaciones internas del microservicio ---
+    OrderController --> OrderService
+    OrderController ..> OrderRequestDTO
+    
+    OrderService --> OrderRepository
+    OrderService --> EventPublisher
+    OrderService *-- Order : "Crea / Modifica"
+    Order *-- OrderStatus
+    
+    EventPublisher ..> OrderCreatedEvent : "Emite"
+}
+
+' Simulando la frontera hacia otros servicios
+package "Shared / Message Broker" #F8F9FA {
+    class MessageQueue <<Kafka/RabbitMQ>> {
+    }
+    OrderCreatedEvent ..> MessageQueue : "Se envía a"
+}
+
+@enduml$$);

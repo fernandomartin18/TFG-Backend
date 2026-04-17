@@ -6,7 +6,7 @@ jest.unstable_mockModule('../../../src/config/database.js', () => ({
   },
 }));
 
-const { getAll } = await import('../../../src/db/templates.js');
+const { getAllForUser, getPublicTemplates, create, update, remove } = await import('../../../src/db/templates.js');
 const db = (await import('../../../src/config/database.js')).default;
 
 describe('Templates DB', () => {
@@ -14,36 +14,28 @@ describe('Templates DB', () => {
     jest.clearAllMocks();
   });
 
-  describe('getAll', () => {
-    it('debería devolver todas las plantillas y ordenar por id ASC', async () => {
-      const mockRows = [
-        { id: 1, name: 'Template 1' },
-        { id: 2, name: 'Template 2' },
-      ];
-      db.query.mockResolvedValue({ rows: mockRows, rowCount: 2 });
-
-      const result = await getAll();
-
-      expect(db.query).toHaveBeenCalledTimes(1);
-      expect(db.query).toHaveBeenCalledWith('SELECT * FROM templates ORDER BY id ASC');
+  describe('getAllForUser', () => {
+    it('debería devolver las plantillas del usuario y públicas', async () => {
+      const mockRows = [{ id: 1 }];
+      db.query.mockResolvedValue({ rows: mockRows });
+      const result = await getAllForUser(1);
+      expect(db.query).toHaveBeenCalledWith(
+        'SELECT * FROM templates WHERE user_id IS NULL OR user_id = $1 ORDER BY user_id NULLS FIRST, id ASC',
+        [1]
+      );
       expect(result).toEqual(mockRows);
     });
+  });
 
-    it('debería devolver lista vacía si no hay plantillas', async () => {
-      db.query.mockResolvedValue({ rows: [], rowCount: 0 });
-
-      const result = await getAll();
-
-      expect(db.query).toHaveBeenCalledTimes(1);
-      expect(db.query).toHaveBeenCalledWith('SELECT * FROM templates ORDER BY id ASC');
-      expect(result).toEqual([]);
-    });
-
-    it('debería lanzar error si la db falla', async () => {
-      const dbError = new Error('Database Error');
-      db.query.mockRejectedValue(dbError);
-
-      await expect(getAll()).rejects.toThrow('Database Error');
+  describe('getPublicTemplates', () => {
+    it('debería devolver las plantillas públicas', async () => {
+      const mockRows = [{ id: 2 }];
+      db.query.mockResolvedValue({ rows: mockRows });
+      const result = await getPublicTemplates();
+      expect(db.query).toHaveBeenCalledWith('SELECT * FROM templates WHERE user_id IS NULL ORDER BY id ASC');
+      expect(result).toEqual(mockRows);
     });
   });
+
+  // Basic tests for create, update, remove could be added.
 });

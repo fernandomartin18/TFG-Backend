@@ -5,6 +5,7 @@ from typing import Dict, Any, Optional, List
 from app.core.config import (
     OLLAMA_CHAT_URL, 
     OLLAMA_TAGS_URL, 
+    OLLAMA_SHOW_URL,
     OLLAMA_GENERATE_URL,
     OLLAMA_TIMEOUT,
     OLLAMA_TAGS_TIMEOUT
@@ -44,7 +45,7 @@ def _call_ollama(payload: Dict[str, Any], timeout: Optional[int] = None) -> Dict
 
 def list_models() -> Dict[str, Any]:
     """
-    Obtiene la lista de modelos disponibles de Ollama.
+    Obtiene la lista de modelos disponibles de Ollama, determinando capacidades de visión.
     
     Returns:
         Diccionario conteniendo información de los modelos
@@ -54,7 +55,12 @@ def list_models() -> Dict[str, Any]:
         resp = requests.get(OLLAMA_TAGS_URL, timeout=OLLAMA_TAGS_TIMEOUT)
         resp.raise_for_status()
         data = resp.json()
-        logger.info(f"Se obtuvieron exitosamente {len(data.get('models', []))} modelos")
+        
+        models = data.get('models', [])
+        for model in models:
+            model['has_vision'] = _is_vision_model(model.get('name', ''))
+            
+        logger.info(f"Se obtuvieron exitosamente {len(models)} modelos")
         return data
     except requests.exceptions.RequestException as e:
         logger.error(f"Fallo al listar modelos: {str(e)}")
@@ -87,9 +93,12 @@ def _extract_model_size(model_name: str) -> int:
     return 0
 
 
+
+_vision_cache: Dict[str, bool] = {}
+
 def _is_vision_model(model_name: str) -> bool:
     """
-    Determina si un modelo tiene capacidades de visión.
+    Determina si un modelo tiene capacidades de visión consultando su arquitectura en Ollama.
     
     Args:
         model_name: Nombre del modelo
@@ -97,9 +106,33 @@ def _is_vision_model(model_name: str) -> bool:
     Returns:
         True si el modelo tiene capacidades de visión
     """
-    vision_keywords = ['vl', 'vision', 'llava', 'bakllava', 'moondream']
+    if model_name in _vision_cache:
+        return _vision_cache[model_name]
+        
+    try:
+        resp = requests.post(OLLAMA_SHOW_URL, json={"name": model_name}, timeout=5)
+        if resp.status_code == 200:
+            data = resp.json()
+            model_info = data.get("model_info", {})
+            has_vision = any(".vision." in k.lower() for k in model_info.keys())
+            
+            if not has_vision:
+                families = data.get("details", {}).get("families", [])
+                if families:
+                    has_vision = "clip" in [str(f).lower() for f in families]
+            
+            _vision_cache[model_name] = has_vision
+            return has_vision
+    except Exception as e:
+        logger.warning(f"Error comprobando capacidades de visión para {model_name}: {e}")
+        
+    # Fallback heurístico en caso de error en la API
+    vision_keywords = ['vl', 'vision', 'llava', 'bakllava', 'moondream', 'e2b', 'minicpm', 'pixtral', 'paligemma']
     model_lower = model_name.lower()
-    return any(keyword in model_lower for keyword in vision_keywords)
+    fallback_result = any(keyword in model_lower for keyword in vision_keywords)
+    
+    _vision_cache[model_name] = fallback_result
+    return fallback_result
 
 
 def _is_coding_model(model_name: str) -> bool:
@@ -429,7 +462,9 @@ def replace_image_references(prompt: str) -> str:
 def generate_with_image_stream_auto(
     prompt: str,
     image_bytes_list: List[bytes],
-    message_history: Optional[list] = None
+    message_history: Optional[list] = None,
+    vision_model_override: Optional[str] = None,
+    coding_model_override: Optional[str] = None
 ):
     """
     Genera una respuesta en modo automático con dos pasos:
@@ -446,9 +481,13 @@ def generate_with_image_stream_auto(
     """
     try:
         # Seleccionar los mejores modelos disponibles
-        best_models = select_best_models()
-        vision_model = best_models["vision_model"]
-        coding_model = best_models["coding_model"]
+        if vision_model_override and coding_model_override:
+            vision_model = vision_model_override
+            coding_model = coding_model_override
+        else:
+            best_models = select_best_models()
+            vision_model = best_models["vision_model"]
+            coding_model = best_models["coding_model"]
         
         logger.info(f"Auto mode using: vision={vision_model}, coding={coding_model}")
         
