@@ -79,14 +79,19 @@ class OllamaService {
    * @param {Array} images - Array de objetos de imagen con buffer y mimetype
    * @param {Array} messageHistory - Historial de mensajes para contexto (opcional)
    * @param {boolean} isAutoMode - Si está en modo automático (opcional)
+   * @param {string} visionModel - Modelo de visión personalizado para modo automático (opcional)
+   * @param {string} codingModel - Modelo de generación personalizado para modo automático (opcional)
    * @returns {Promise<Stream>} Stream de respuesta
    */
-  async generateCodeStream(model, prompt, images = [], messageHistory = [], isAutoMode = false) {
+  async generateCodeStream(model, prompt, images = [], messageHistory = [], isAutoMode = false, visionModel = null, codingModel = null) {
     try {
       const formData = new FormData();
       formData.append('model', model);
       formData.append('prompt', prompt);
       formData.append('auto_mode', isAutoMode ? 'true' : 'false');
+      
+      if (visionModel) formData.append('vision_model', visionModel);
+      if (codingModel) formData.append('coding_model', codingModel);
       
       // Agregar historial de mensajes si existe
       if (messageHistory && messageHistory.length > 0) {
