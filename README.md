@@ -5,6 +5,8 @@
 # Genesis Backend
 
 El núcleo de orquestación, almacenamiento e Inteligencia Artificial de la plataforma **Genesis**. Está diseñado con una arquitectura robusta de dos capas para procesar solicitudes del usuario, gestionar la autenticación y conectarse con modelos LLM locales mediante Ollama para generar código y analizar diagramas UML.
+
+> 🌐 **Descubre más:** Puedes visitar la [Landing Page de Genesis](https://fernandomartin.tech/genesis) para ver una presentación completa del proyecto.
  
 > Este es el repositorio del Backend de Genesis. Para las instrucciones de instalación paso a paso de todo el ecosistema (incluyendo base de datos, Python, y Node.js), consulta el archivo [INSTALACION.md](./INSTALACION.md).
 
