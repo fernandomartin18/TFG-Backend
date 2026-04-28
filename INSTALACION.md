@@ -1,4 +1,4 @@
-# 🚀 Genesis Local Installation Guide
+# 🚀 Guía de instalación en local de GENESIS
 
 Este documento proporciona las instrucciones paso a paso para configurar y ejecutar todo el ecosistema de Genesis (Frontend, API Gateway y Servicio de IA) de manera local en tu máquina.
 
@@ -32,7 +32,6 @@ El API Gateway de Genesis utiliza PostgreSQL para almacenar usuarios, chats, pro
    # Desde la raíz del proyecto
    psql -U postgres -d tfg_app -f backend/src/db/schema.sql
    ```
-   *(Si tienes un volcado de datos, puedes usar `backup_tfg_completo.sql` ubicado en la raíz).*
 
 ---
 
