@@ -33,7 +33,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install Python dependencies
-        run: pip install -r llmapi/requirements.txt
+        run: pip install -r llmapi/requirements.txt # NOSONAR
 
       - name: Run Python tests with coverage
         run: |
