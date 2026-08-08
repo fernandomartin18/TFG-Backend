@@ -4,7 +4,205 @@
 
 # Genesis Backend
 
+The orchestration, storage, and Artificial Intelligence core of the **Genesis** platform. It is designed with a resilient two-layer architecture to handle user requests, manage authentication, and connect to local LLM models via Ollama to generate code and analyze UML diagrams.
+
+> 🖥️ **Frontend repository:** https://github.com/fernandomartin18/TFG-Frontend.
+
+> 🌐 **Learn more:** Visit the [Genesis landing page](https://fernandomartin.tech/genesis) for a full project overview.
+ 
+> This is the Backend repository for Genesis. For step-by-step installation instructions for the whole ecosystem (including database, Python, and Node.js), see the file [INSTALACION.md](./INSTALACION.md).
+
+## 📑 Table of Contents
+
+- [🧠 Two-Layer Architecture](#-two-layer-architecture)
+- [📂 Project Structure](#-project-structure)
+- [✨ Key Features](#-key-features)
+- [🌐 Main API Endpoints](#-main-api-endpoints)
+- [🔄 Generation Flow (Stream Mode)](#-generation-flow-stream-mode)
+- [🛠️ Common Backend Troubleshooting](#️-common-backend-troubleshooting)
+
+## 🧠 Two-Layer Architecture
+
+Genesis separates routing responsibilities from AI processing into two specialized services that operate in an orchestrated manner.
+
+### 🟢 Node.js API Gateway (Port 3000)
+The gateway for the frontend and the main entrypoint server.
+- **JWT Authentication:** Secure access and token refresh management (`bcrypt` + `jsonwebtoken`).
+- **PostgreSQL Persistence:** Stores user profiles, chat histories, projects, and settings.
+- **Reverse Proxy:** Routes heavy or streaming requests to the AI service.
+- **Data Validation:** Initial processing of files (base64/multipart images) and sanitization using `express-validator`.
+
+### 🔵 FastAPI (Port 8001)
+The heavy-lifting AI processing engine developed in Python.
+- **Communication with Ollama:** Direct HTTP connection to the local model engine (`/api/chat`, `/api/tags`).
+- **Two-Step Generation (Auto Mode):** Extract PlantUML from diagrams → Generate code.
+- **Image Processing:** Conversion and validation of up to 5 UML diagrams in parallel.
+- **Asynchronous Streaming:** Progressive emission of Server-Sent Events (SSE) for real-time feedback.
+
+---
+
+## 📂 Project Structure
+
+```text
+backend/
+├── src/                          # API Gateway (Express + Node.js)
+│   ├── server.js                # Express server entrypoint
+│   ├── config/
+│   │   ├── index.js             # Centralized configuration
+│   │   └── database.js          # PostgreSQL connection pool
+│   ├── routes/
+│   │   ├── index.js             # Route registration
+│   │   ├── auth.routes.js       # Auth routes
+│   │   ├── users.routes.js      # Users routes
+│   │   ├── chats.routes.js      # Chats routes
+│   │   ├── messages.routes.js   # Messages routes
+│   │   ├── projects.routes.js   # Projects routes
+│   │   ├── templates.routes.js  # Templates routes
+│   │   ├── plantuml.routes.js   # PlantUML template routes
+│   │   ├── models.routes.js     # Ollama models routes
+│   │   └── generate.routes.js   # AI generation routes
+│   ├── controllers/
+│   │   ├── auth.controller.js       # Auth logic
+│   │   ├── users.controller.js      # Users logic
+│   │   ├── chats.controller.js      # Chats logic
+│   │   ├── messages.controller.js   # Messages logic
+│   │   ├── projects.controller.js   # Projects logic
+│   │   ├── templates.controller.js  # Templates logic
+│   │   ├── plantuml.controller.js   # PlantUML templates logic
+│   │   ├── models.controller.js     # Models logic
+│   │   └── generate.controller.js   # Generation logic
+│   ├── services/
+│   │   ├── auth.service.js      # JWT and bcrypt
+│   │   └── ollama.service.js    # HTTP client for FastAPI
+│   ├── middlewares/
+│   │   ├── auth.middleware.js       # JWT verification
+│   │   ├── validation.middleware.js # Validation handling
+│   │   ├── validators.js            # Validation rules
+│   │   └── error.middleware.js      # Error handling
+│   ├── db/
+│   │   ├── index.js             # Exports all DB modules
+│   │   ├── users.js             # Users operations
+│   │   ├── chats.js             # Chats operations
+│   │   ├── messages.js          # Messages operations
+│   │   ├── message_images.js    # Image operations
+│   │   ├── projects.js          # Projects operations
+│   │   ├── templates.js         # Templates operations
+│   │   ├── plantuml.js          # PlantUML templates operations
+│   │   ├── generated_codes.js   # Generated code operations
+│   │   ├── schema.sql           # Database schema
+│   │   └── README.md            # DB documentation
+│   └── utils/
+│       └── logger.js            # Logging system
+├── package.json
+├── .env
+├── .gitignore
+├── README.md
+├── API_AUTH.md                   # Authentication documentation
+│
+└── llmapi/                       # AI backend (FastAPI + Python)
+    ├── app/
+    │   ├── __init__.py
+    │   ├── main.py
+    │   ├── routes/
+    │   │   ├── generate.py      # Code generation endpoint
+    │   │   └── models.py        # Models endpoint
+    │   ├── services/
+    │   │   └── ollama_service.py # Communication with Ollama
+    │   ├── schemas/
+    │   │   └── generate_request.py # Pydantic models
+    │   └── core/
+    │       ├── config.py        # Environment variables
+    │       └── logger.py        # Logging
+    ├── requirements.txt
+    ├── setup.sh
+    ├── run.sh
+    ├── .env
+    └── .venv/
+```
+
+---
+
+## ✨ Key Features
+
+### 💾 Advanced Data Management (PostgreSQL)
+- **Strategic Relationships:** Automatic cascades (`ON DELETE CASCADE`) to ensure referential integrity when removing users or projects.
+- **Projects and Chats:** Hierarchical organization of conversations.
+- **Custom Templates:** Users can save prompt snippets or PlantUML diagrams for reuse.
+
+### 🤖 Generation Engine (Ollama)
+- **Smart Auto Mode:** Uses a vision model (e.g., `qwen3-vl:8b`) to translate a UML diagram into intermediate code, then switches to a code-specialized model (like `qwen2.5-coder:14b`) to generate the final output.
+- **Adjustable Timeouts:** Dynamic timeout configuration for large (27B+) and medium (7B, 14B) models.
+- **Memory Management:** Specific endpoints (`/api/models/unload`) to free RAM/VRAM when a model is no longer required.
+
+### 🔐 Security and Authentication
+- **Transparent Refresh Flow:** Refresh token architecture persisted in the database.
+- **Secure Passwords:** Hashed with 10 salt rounds.
+- **Strict Rules:** Password validation (upper/lowercase, numbers, >6 chars) and protection against SQL injection by using query params (`pg`).
+
+---
+
+## 🌐 Main API Endpoints
+
+The Genesis API exposes multiple resource-oriented endpoints. (Add `Authorization: Bearer <token>` for protected routes 🔒).
+
+### Authentication and Users
+- `POST /api/auth/register` - Register
+- `POST /api/auth/login` - Login
+- `POST /api/auth/refresh` - Refresh tokens
+- `GET /api/auth/profile` 🔒 - Current user profile
+- `PUT /api/users/me` 🔒 - Update avatar/email
+
+### Organization (Chats & Projects)
+- `GET /api/projects` 🔒 - List project folders
+- `POST /api/projects` 🔒 - Create folder
+- `GET /api/chats` 🔒 - List chat history
+- `POST /api/chats` 🔒 - Start a new chat (with or without project)
+- `POST /api/messages` 🔒 - Persist messages to the database
+
+### Artificial Intelligence (Gateway → FastAPI)
+- `GET /api/models` - Discover available Ollama models (`/models/` in FastAPI).
+- `POST /api/generate` - Blocking generation endpoint.
+- `POST /api/generate/stream` - Streaming generation (Server-Sent Events) with support for context and images.
+- `POST /api/models/unload` - Unload an active model from memory.
+
+---
+
+## 🔄 Generation Flow (Stream Mode)
+
+When the user sends a chat request the system executes the following flow:
+
+1. **Frontend** sends `POST /api/generate/stream` (multipart with images + text + history) to the **API Gateway (Node.js)**.
+2. The Gateway validates file sizes (<10MB) and forwards the request to **FastAPI** (`POST /generate/stream`).
+3. **FastAPI** analyzes the request:
+   - *Are there images and is Auto Mode active?*
+     - Step 1: Emit `[STEP1_START]`, query Ollama (vision model), extract PlantUML, emit `[STEP1_END]`.
+     - Step 2: Emit `[STEP2_START]`, query Ollama (code model) with the PlantUML as context.
+   - *Is it only text?* Send directly to the code model.
+4. **FastAPI** receives Ollama output chunk by chunk (streaming) and sends it as Server-Sent Events to the Gateway, which relays them to the Frontend.
+5. The system emits `[DONE]` and the Frontend persists the final message via `POST /api/messages`.
+
+---
+
+## 🛠️ Common Backend Troubleshooting
+
+- **`Read timed out. (read timeout=600)`**: The model is very large and Ollama needs more time to infer. Increase `OLLAMA_TIMEOUT` in FastAPI and `REQUEST_TIMEOUT` in Node.js.
+- **`503 - Service Unavailable`**: Verify that the Ollama base service is running (`ollama serve`).
+- **CORS Errors or Expired Token**: If the frontend cannot log in, verify that `JWT_SECRET` in Node.js and your system clock are correct. Also ensure the frontend is served from a URL listed in `ALLOWED_ORIGINS`.
+
+---
+> For live API docs of the AI endpoints, start the FastAPI service and visit [http://localhost:8001/docs](http://localhost:8001/docs).
+
+---
+
+<div align="center">
+  <img src="./assets/Genesis_Horizontal_Violet.png" alt="Genesis Logo" width="400" />
+</div>
+
+# Genesis Backend
+
 El núcleo de orquestación, almacenamiento e Inteligencia Artificial de la plataforma **Genesis**. Está diseñado con una arquitectura robusta de dos capas para procesar solicitudes del usuario, gestionar la autenticación y conectarse con modelos LLM locales mediante Ollama para generar código y analizar diagramas UML.
+
+> 🖥️ **Repositorio para el Frontend:** https://github.com/fernandomartin18/TFG-Frontend.
 
 > 🌐 **Descubre más:** Puedes visitar la [Landing Page de Genesis](https://fernandomartin.tech/genesis) para ver una presentación completa del proyecto.
  
@@ -116,7 +314,6 @@ backend/
     ├── run.sh
     ├── .env
     └── .venv/
-```
 
 ---
 
